@@ -1,0 +1,6 @@
+# Optional semantic-search dependencies (TZ §6.3).
+# Install on top of requirements.txt and set ENABLE_SEMANTIC=true to enable
+# vector search. Heavy: pulls torch (~2GB) and downloads the model (~470MB) on
+# first use. Without these, lexical (pg_trgm) search is used and hybrid degrades
+# gracefully to lexical.
+sentence-transformers==3.3.1

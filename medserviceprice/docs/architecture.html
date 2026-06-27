@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedServicePrice.kz — Архитектурная документация (C4)</title>
+<style>
+  :root{
+    --ink:#0f0f0f; --ink2:#333; --muted:#555; --line:#bdbdbd; --line2:#888;
+    --paper:#ffffff; --panel:#f6f6f6; --panel2:#efefef; --chip:#eaeaea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Helvetica Neue",Arial,"Segoe UI",system-ui,sans-serif;line-height:1.55;
+    padding:48px 32px 110px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1500px;margin:0 auto}
+
+  header.doc{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:34px}
+  header.doc h1{font-size:30px;margin:0 0 6px;font-weight:800;letter-spacing:.2px}
+  header.doc .lead{color:var(--muted);font-size:14.5px;margin:0 0 10px;max-width:880px}
+  header.doc .crumbs{color:var(--ink2);font-size:12.5px;font-family:"Courier New",ui-monospace,monospace}
+  header.doc .crumbs b{color:var(--ink)}
+
+  .card{background:var(--paper);border:1.5px solid var(--ink);border-radius:4px;
+    padding:26px 28px;margin:0 0 30px}
+  .card > h2{display:flex;align-items:baseline;gap:12px;margin:0 0 6px;font-size:21px;font-weight:800;
+    border-bottom:1px solid var(--line);padding-bottom:12px}
+  .card > h2 .num{font-family:"Courier New",monospace;font-size:15px;font-weight:800;color:var(--paper);
+    background:var(--ink);border-radius:3px;padding:3px 9px;line-height:1}
+  .card .cap{color:var(--muted);font-size:13.5px;margin:14px 0 18px}
+
+  .diagram{background:#fcfcfc;border:1px solid var(--line);border-radius:4px;padding:24px 18px;
+    overflow-x:auto;text-align:center}
+  pre.mermaid{margin:0;background:transparent;font-size:16px}
+
+  .note{font-size:13.5px;color:var(--ink2);margin-top:18px;padding:14px 18px;
+    background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:3px}
+  .note b{color:var(--ink)}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+  caption{caption-side:top;text-align:left;font-weight:700;color:var(--ink);margin-bottom:8px;font-size:14px}
+  th,td{text-align:left;padding:10px 13px;border:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--ink);color:var(--paper);font-weight:700;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.5px}
+  tbody tr:nth-child(even){background:var(--panel)}
+  td code,p code,li code{background:var(--chip);color:var(--ink);padding:1px 6px;border-radius:3px;
+    font-family:"Courier New",monospace;font-size:12.5px}
+
+  .analysis h3{font-size:15.5px;margin:22px 0 8px;color:var(--ink);font-weight:800;
+    border-left:5px solid var(--ink);padding-left:11px}
+  .analysis ul{margin:0 0 8px;padding-left:22px;color:var(--ink2);font-size:13.5px}
+  .analysis li{margin:5px 0}.analysis li b{color:var(--ink)}
+  .tag{display:inline-block;font-family:"Courier New",monospace;font-size:11px;font-weight:700;
+    border:1px solid var(--ink);border-radius:3px;padding:1px 7px;margin-right:7px;letter-spacing:.3px}
+  .tag.ok{background:var(--ink);color:var(--paper)}
+  .tag.warn{background:var(--paper);color:var(--ink)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--muted);margin:16px 0 2px}
+  .legend .it{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:34px;height:16px;border:1.5px solid var(--ink);display:inline-block}
+  .sw.s1{background:#ffffff}.sw.s2{background:#e9e9e9}.sw.s3{background:#cfcfcf}
+  .sw.s4{background:#f5f5f5}.sw.s5{background:#ffffff;border-style:dashed}
+
+  footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;margin-top:34px}
+  footer code{background:var(--chip);padding:1px 6px;border-radius:3px;font-family:"Courier New",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>MedServicePrice.kz — Архитектурная документация</h1>
+    <p class="lead">Восстановленная архитектура работающего приложения по модели <b>C4</b>:
+       контекст → контейнеры → компоненты → развёртывание. Чёрно-белая схема для печати и ревью.
+       Диаграммы построены на Mermaid и рендерятся в браузере.</p>
+    <p class="crumbs">Тип: <b>модульный монолит + event-driven ингестия</b> &nbsp;|&nbsp; клиент-сервер &nbsp;|&nbsp;
+       6 контейнеров &nbsp;|&nbsp; 8 таблиц &nbsp;|&nbsp; 1 источник (5 городов) &nbsp;|&nbsp; rev. 3.0</p>
+    <p class="crumbs">→ <b><a href="parsing-flow.html" style="color:var(--ink)">Диаграмма действий: конвейер парсинга и нормализации</a></b></p>
+    <div class="legend">
+      <span class="it"><span class="sw s1"></span> Актор / внешняя сущность</span>
+      <span class="it"><span class="sw s2"></span> Приложение (Frontend / Backend)</span>
+      <span class="it"><span class="sw s3"></span> Асинхронный слой (Celery)</span>
+      <span class="it"><span class="sw s4"></span> Хранилище данных</span>
+      <span class="it"><span class="sw s5"></span> Не реализовано / план</span>
+    </div>
+  </header>
+
+  <!-- 0. TYPE -->
+  <div class="card">
+    <h2><span class="num">0</span> Тип архитектуры — обоснование</h2>
+    <table>
+      <caption>Классификация системы по архитектурным признакам</caption>
+      <thead><tr><th style="width:20%">Признак</th><th>Что в системе</th><th style="width:14%">Вывод</th></tr></thead>
+      <tbody>
+        <tr><td><b>Клиент-сервер</b></td><td>SPA (React) общается с REST API (FastAPI) через Nginx-прокси</td><td>Да</td></tr>
+        <tr><td><b>Модульный монолит</b></td><td>Один backend-процесс, но строгое разделение модулей: <code>api</code>, <code>services</code>, <code>parsers</code>, <code>tasks</code> с явными границами; источники подключаются по adapter-паттерну</td><td>Да — ядро</td></tr>
+        <tr><td><b>Event-driven</b></td><td>Ингестия асинхронна: API/Beat кладут задачу в Redis-очередь, Celery Worker её разбирает. Развязка по очереди сообщений</td><td>Да — слой сбора</td></tr>
+        <tr><td><b>Микросервисы</b></td><td>Нет независимо деплоящихся сервисов с собственными БД; все компоненты делят одну PostgreSQL</td><td>Нет</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Итог:</b> гибрид «модульный монолит + event-driven ингестия» поверх клиент-серверной модели.
+      Чтения идут синхронно (API → PostgreSQL / Redis), а тяжёлый сбор данных вынесен в асинхронный конвейер на Celery —
+      это даёт изоляцию источников и не блокирует API.</div>
+  </div>
+
+  <!-- 1. CONTEXT -->
+  <div class="card">
+    <h2><span class="num">1</span> Контекстная диаграмма ИС «MedServicePrice.kz»</h2>
+    <p class="cap">Кто пользуется системой, с какими внешними системами она связана и каковы основные взаимодействия (уровень C4-1).</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  patient["ПАЦИЕНТ<br/><br/>веб-браузер<br/>поиск и сравнение цен"]
+  admin["АДМИН / АНАЛИТИК<br/><br/>оператор данных<br/>запуск парсинга, разбор очереди"]
+
+  sys["СИСТЕМА: MedServicePrice.kz<br/><br/>агрегатор цен на медицинские услуги в РК.<br/>Сбор публичных прайс-листов, нормализация<br/>к единому каталогу, поиск и сравнение цен."]
+
+  src["ВНЕШНИЙ ИСТОЧНИК<br/><br/>прайс-листы клиник<br/>kdlolymp.kz и др. (public)"]
+  email["EMAIL-ПРОВАЙДЕР<br/><br/>рассылка price-alerts<br/>(не реализовано)"]
+
+  patient ==>|"HTTPS · поиск, сравнение, история цен"| sys
+  admin ==>|"HTTPS + X-API-Key · парсинг, очередь нормализации"| sys
+  sys ==>|"HTTP GET · robots-aware, задержка 1.5 c, retry"| src
+  sys -.->|"SMTP · планируется"| email
+
+  classDef actor fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
+  classDef core fill:#e9e9e9,stroke:#000,color:#000,stroke-width:3px;
+  classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef plan fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px,stroke-dasharray:6 4;
+  class patient,admin actor; class sys core; class src ext; class email plan;
+    </pre></div>
+  </div>
+
+  <!-- 2. CONTAINER -->
+  <div class="card">
+    <h2><span class="num">2</span> Контейнерная архитектура «MedServicePrice.kz»</h2>
+    <p class="cap">Развёртываемые единицы (контейнеры), их технологии и протоколы связей (уровень C4-2).</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  user["ПАЦИЕНТ"]
+  admin["АДМИН"]
+  src["kdlolymp.kz<br/>внешний источник"]
+
+  subgraph host["DOCKER HOST · сеть docker-compose"]
+    direction TB
+    nginx["NGINX · порт 80<br/>отдача SPA + reverse-proxy /api<br/>gzip, security-заголовки"]
+
+    subgraph appl["Прикладной слой"]
+      direction LR
+      fe["FRONTEND SPA<br/>React 18 + Vite + TS<br/>Tailwind, TanStack Query<br/>(статические файлы)"]
+      api["BACKEND API · порт 8000<br/>FastAPI (async)<br/>SQLAlchemy 2, Pydantic 2<br/>slowapi rate-limit"]
+    end
+
+    subgraph asyncl["Асинхронный слой"]
+      direction LR
+      worker["CELERY WORKER<br/>задача parse_source<br/>concurrency = 2<br/>httpx + BeautifulSoup + rapidfuzz"]
+      beat["CELERY BEAT<br/>планировщик<br/>ежедневно 03:00 Asia/Almaty<br/>staggered по источникам"]
+    end
+
+    subgraph datal["Слой данных"]
+      direction LR
+      pg[("POSTGRESQL 16<br/>pg_trgm + pgvector<br/>raw, catalog, clinics,<br/>offers, history, queues")]
+      redis[("REDIS 7<br/>broker очередей +<br/>cache ответов (TTL) +<br/>хранилище rate-limit")]
+    end
+  end
+
+  user ==>|"HTTPS"| nginx
+  admin ==>|"HTTPS + X-API-Key"| nginx
+  nginx ==>|"статика"| fe
+  nginx ==>|"REST / JSON"| api
+  api ==>|"SQL · драйвер asyncpg"| pg
+  api ==>|"RESP · cache-aside + rate-limit"| redis
+  api -.->|".delay() · постановка задачи"| redis
+  beat ==>|"cron schedule"| redis
+  redis ==>|"выдача задачи воркеру"| worker
+  worker ==>|"SQL · драйвер psycopg2"| pg
+  worker -.->|"инвалидация ac:* offers:* clinic:*"| redis
+  worker ==>|"HTTP GET"| src
+
+  classDef actor fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
+  classDef edge fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
+  classDef app fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef async fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px;
+  class user,admin actor; class nginx edge; class fe,api app; class worker,beat async; class pg,redis data; class src ext;
+    </pre></div>
+    <table>
+      <caption>Спецификация контейнеров</caption>
+      <thead><tr><th>Контейнер</th><th>Назначение</th><th>Технологии</th><th>Принимает</th><th>Взаимодействует с</th></tr></thead>
+      <tbody>
+        <tr><td><b>Nginx</b></td><td>отдача SPA, проксирование <code>/api</code>, gzip, заголовки безопасности</td><td>nginx:alpine</td><td>HTTPS :80</td><td>Frontend, Backend</td></tr>
+        <tr><td><b>Frontend</b></td><td>интерфейс: поиск, сравнение, профиль клиники, история цен</td><td>React 18, Vite, TS, Tailwind, TanStack Query</td><td>—</td><td>Backend (REST)</td></tr>
+        <tr><td><b>Backend API</b></td><td>read-side API + admin; кэш по схеме cache-aside</td><td>FastAPI, SQLAlchemy 2, Pydantic 2, slowapi</td><td>REST/JSON</td><td>PostgreSQL, Redis</td></tr>
+        <tr><td><b>Celery Worker</b></td><td>парсинг → нормализация → офферы → история</td><td>Celery 5, httpx, BeautifulSoup4, rapidfuzz</td><td>задача из Redis</td><td>источник, PostgreSQL, Redis</td></tr>
+        <tr><td><b>Celery Beat</b></td><td>ежедневный запуск парсинга (со сдвигом) + пересчёт эмбеддингов</td><td>Celery beat</td><td>cron</td><td>Redis</td></tr>
+        <tr><td><b>PostgreSQL</b></td><td>raw_records, services_catalog, clinics, offers, price_history, очереди</td><td>pgvector/pg16, pg_trgm</td><td>SQL</td><td>API (async), Worker (sync)</td></tr>
+        <tr><td><b>Redis</b></td><td>брокер задач + кэш ответов (TTL) + счётчики rate-limit</td><td>redis:7-alpine</td><td>RESP</td><td>API, Worker, Beat</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. COMPONENT -->
+  <div class="card">
+    <h2><span class="num">3</span> Компонентная диаграмма серверной части «MedServicePrice.kz»</h2>
+    <p class="cap">Внутренние модули backend и worker: контроллеры API, бизнес-сервисы, парсеры, фоновые задачи (уровень C4-3).</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  client["NGINX · /api"]
+
+  subgraph be["BACKEND · процесс FastAPI"]
+    direction TB
+    pub["api/public<br/>контроллеры чтения:<br/>search · offers · clinics ·<br/>price-history · subscriptions"]
+    adm["api/admin<br/>контроллеры управления:<br/>parse/run · logs ·<br/>unmatched · resolve"]
+    sec["core/security<br/>проверка X-API-Key"]
+    search["services/search<br/>лексический (pg_trgm) +<br/>семантический (pgvector) +<br/>слияние RRF (k=60)"]
+    qmod["services/queries<br/>сборка ответов offers / clinic,<br/>агрегаты min/max/avg, freshness"]
+    norm["services/normalization<br/>exact → fuzzy (двойной порог:<br/>token_set ≥ 88 И token_sort ≥ 60)<br/>→ unmatched_queue"]
+    emb["services/embeddings<br/>sentence-transformers<br/>(опционально)"]
+    fx["services/fx<br/>курс USD → KZT<br/>(fallback 470)"]
+  end
+
+  subgraph wk["WORKER · процесс Celery"]
+    direction TB
+    task["tasks/parsing · parse_source<br/>оркестратор конвейера:<br/>raw → clinic → normalize →<br/>offer → history → invalidate"]
+    embt["tasks/embeddings_task<br/>ночной пересчёт векторов"]
+    reg["parsers/registry<br/>source_key → factory"]
+    kdl["parsers/kdl · KDLParser<br/>(реальный источник, 5 городов)"]
+    base["parsers/base · BaseParser<br/>robots.txt, retry, delay,<br/>content_hash / offer_hash"]
+  end
+
+  pg[("POSTGRESQL")]
+  redis[("REDIS")]
+
+  client ==> pub
+  client ==> adm
+  adm ==> sec
+  pub ==> search
+  pub ==> qmod
+  pub ==> fx
+  search ==> emb
+  search ==> pg
+  qmod ==> pg
+  pub <==>|"cache-aside"| redis
+  adm -.->|"enqueue .delay"| redis
+  redis ==>|"выдача задачи"| task
+  task ==> reg
+  reg ==> kdl
+  kdl ==> base
+  task ==> norm
+  task ==> embt
+  embt ==> emb
+  task ==> pg
+  task -.->|"инвалидация кэша"| redis
+
+  classDef api fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef svc fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef prs fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  classDef io fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
+  class pub,adm,sec api; class search,qmod,norm,emb,fx,task,embt svc; class reg,kdl,base prs; class pg,redis data; class client io;
+    </pre></div>
+    <div class="note"><b>Ключевой приём:</b> модули <code>services/</code> и <code>parsers/</code> не зависят от FastAPI и Celery —
+      оркестрацию выполняет только <code>tasks/parsing.py</code>. Поэтому бизнес-логику можно тестировать прямым вызовом функций
+      (что и заявлено в проектных конвенциях).</div>
+  </div>
+
+  <!-- 4. DEPLOYMENT -->
+  <div class="card">
+    <h2><span class="num">4</span> Диаграмма развёртывания «MedServicePrice.kz»</h2>
+    <p class="cap">Физическое размещение: хост, контейнеры Docker, тома, порты, сеть, внешние соединения.</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  internet(["ИНТЕРНЕТ<br/>пользователи"])
+  ext["kdlolymp.kz<br/>внешний источник"]
+
+  subgraph vm["ХОСТ / ВИРТУАЛЬНАЯ МАШИНА · on-prem или cloud"]
+    subgraph dock["DOCKER ENGINE · bridge-сеть docker-compose"]
+      direction TB
+      c1["frontend (контейнер)<br/>nginx:alpine<br/>порт 80 → host"]
+      c2["backend (контейнер)<br/>uvicorn / FastAPI<br/>порт 8000 → host"]
+      c3["worker (контейнер)<br/>celery worker · 2 процесса"]
+      c4["beat (контейнер)<br/>celery beat"]
+      c5["db (контейнер)<br/>pgvector/pgvector:pg16"]
+      c6["redis (контейнер)<br/>redis:7-alpine"]
+      v1[("том pgdata<br/>персистентность БД")]
+      v2[("том redisdata<br/>персистентность кэша")]
+    end
+  end
+
+  internet ==>|"HTTPS · порты 80 / 8000"| c1
+  c1 ==>|"upstream /api"| c2
+  c2 ==> c5
+  c2 ==> c6
+  c3 ==> c5
+  c3 ==> c6
+  c4 ==> c6
+  c3 ==>|"исходящий HTTP"| ext
+  c5 --- v1
+  c6 --- v2
+
+  classDef cont fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef vol fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  classDef net fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
+  class c1,c2,c3,c4,c5,c6 cont; class v1,v2 vol; class internet,ext net;
+    </pre></div>
+    <div class="note"><b>Внимание:</b> текущий compose — single-host, без оркестратора и балансировщика.
+      Все 6 контейнеров на одной машине; PostgreSQL и Redis не реплицированы; есть healthchecks и <code>restart: unless-stopped</code>.
+      Это прод-таргет прототипа — варианты масштабирования см. в разделе 5.</div>
+  </div>
+
+  <!-- 5. ANALYSIS -->
+  <div class="card analysis">
+    <h2><span class="num">5</span> Анализ архитектуры</h2>
+    <p class="cap">Узкие места, масштабирование, безопасность, отказоустойчивость, направления улучшений.</p>
+
+    <h3>Узкие места</h3>
+    <ul>
+      <li><b>Единственный PostgreSQL.</b> Поиск (trgm/vector), запись парсера и чтения API идут в одну БД без реплик — под нагрузкой чтения конкурируют с ночной записью.</li>
+      <li><b>Worker concurrency = 2.</b> При росте числа источников парсинг удлиняется, задачи сериализуются.</li>
+      <li><b>attach_offer_stats.</b> Делает отдельный запрос на каждый из 8 хитов автокомплита (N+1) — смягчено кэшем, но остаётся точкой роста.</li>
+      <li><b>Семантический поиск.</b> Загружает многоязычный трансформер в память worker — высокий расход RAM при включении.</li>
+    </ul>
+
+    <h3>Масштабирование</h3>
+    <ul>
+      <li><b>Backend API — stateless</b>, горизонтально масштабируется за балансировщиком тривиально (состояние в PostgreSQL/Redis).</li>
+      <li><b>Worker'ы</b> масштабируются добавлением реплик (Celery разбирает общую очередь). Источники уже изолированы: один источник = одна задача.</li>
+      <li><b>PostgreSQL</b> — вертикально + read-replica для чтений; вынести vector-поиск на реплику.</li>
+      <li><b>Redis</b> — при росте нагрузки разнести broker / cache / rate-limit на разные инстансы или Redis Cluster.</li>
+    </ul>
+
+    <h3>Безопасность</h3>
+    <ul>
+      <li><span class="tag ok">есть</span>rate-limit 120/мин (Redis), CORS на конкретный origin, admin за <code>X-API-Key</code>, security-заголовки (приложение + Nginx), только ORM (без склейки SQL), <code>page_size ≤ 100</code>, валидация Pydantic, глобальный обработчик исключений (стектрейс не утекает).</li>
+      <li><span class="tag ok">есть</span>хранятся только публичные цены, без PII пациентов; парсер уважает robots.txt и задержку.</li>
+      <li><span class="tag warn">пробел</span>нет аутентификации пользователей (аккаунт = localStorage); admin-ключ статичный (нет ротации/лимита на сам ключ); TLS терминируется вне compose; нет аудита admin-действий.</li>
+    </ul>
+
+    <h3>Отказоустойчивость</h3>
+    <ul>
+      <li><span class="tag ok">есть</span>партиал-толерантность: ошибка строки → <code>partial</code>, ошибка источника → <code>failed</code>, но другие источники не падают (изоляция задач).</li>
+      <li><span class="tag ok">есть</span>retry с экспонентой в парсере; healthchecks + <code>restart: unless-stopped</code> у всех контейнеров; инвалидация кэша обёрнута в try/except и не валит задачу.</li>
+      <li><span class="tag warn">риск</span>SPOF: один инстанс PostgreSQL и Redis (нет реплик/бэкапов в compose), один host; Beat — единственная точка планирования.</li>
+    </ul>
+
+    <h3>Потенциальные улучшения</h3>
+    <ul>
+      <li>Миграция на оркестратор (Kubernetes / Swarm) + load-balancer + терминация TLS; автоматические бэкапы PostgreSQL (pgBackRest / WAL-G).</li>
+      <li>Реализовать отправку price-alerts (sender для <code>subscriptions</code>) — сейчас данные копятся, рассылки нет.</li>
+      <li>Подключить реальный источник курса вместо fallback 470; свести <code>attach_offer_stats</code> к одному агрегирующему запросу.</li>
+      <li>Observability: структурированные логи → Loki, метрики Celery/FastAPI → Prometheus/Grafana, трейсинг конвейера парсинга.</li>
+      <li>Включить и прогреть семантический поиск на отдельном worker-пуле; вынести embeddings в отдельный сервис.</li>
+      <li>Backend-аутентификация (JWT/сессии) для аккаунт-функций вместо localStorage, если нужны кросс-девайс данные.</li>
+    </ul>
+  </div>
+
+  <footer>
+    Источник истины — код в <code>medserviceprice/</code>. Текстовая версия с теми же диаграммами — <code>ARCHITECTURE.md</code>.
+    Диаграммы: Mermaid (C4 Context / Container / Component / Deployment).
+  </footer>
+
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral',
+    securityLevel: 'loose',
+    flowchart: { curve: 'linear', nodeSpacing: 70, rankSpacing: 95, htmlLabels: true, useMaxWidth: true, padding: 16 },
+    themeVariables: {
+      fontFamily: 'Helvetica Neue, Arial, sans-serif',
+      fontSize: '16px',
+      lineColor: '#222',
+      textColor: '#0f0f0f',
+      clusterBkg: '#fbfbfb',
+      clusterBorder: '#666'
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-on-surface antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Material Symbols base styling (matches Stitch screens) */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    user-select: none;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+}
+
+@layer components {
+  /* Shared utility classes lifted from the Stitch design screens */
+  .hero-gradient {
+    background: linear-gradient(180deg, #f8f9fb 0%, #ffffff 100%);
+  }
+
+  .search-shadow {
+    box-shadow:
+      0 8px 32px -4px rgba(9, 30, 66, 0.08),
+      0 0 1px 0 rgba(9, 30, 66, 0.31);
+  }
+
+  .card-hover {
+    transition: all 0.2s ease-in-out;
+  }
+  .card-hover:hover {
+    box-shadow: 0px 4px 12px rgba(9, 30, 66, 0.08);
+    transform: translateY(-2px);
+    border-color: #003d9b;
+  }
+
+  .ambient-shadow {
+    box-shadow: 0 10px 40px -8px rgba(9, 30, 66, 0.12);
+  }
+}
+
+/* Respect reduced-motion preferences for the framer-motion transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin, on-brand scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c3c6d6;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #737685;
+}

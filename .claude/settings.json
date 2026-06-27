@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(lsof -nP -iTCP:6379 -sTCP:LISTEN)",
+      "Bash(redis-cli ping *)",
+      "Bash(curl -sS -f http://127.0.0.1:8010/health)",
+      "Bash(curl -sS http://127.0.0.1:8010/health)",
+      "Bash(docker exec *)",
+      "Bash(lsof -nP -iTCP:8010 -sTCP:LISTEN)",
+      "Bash(exit 1)",
+      "Bash(curl -sS http://127.0.0.1:8010/health/ready)"
+    ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
+  }
+}

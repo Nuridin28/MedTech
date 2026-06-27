@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedServicePrice.kz — Конвейер парсинга (диаграмма действий)</title>
+<style>
+  :root{
+    --ink:#0f0f0f; --ink2:#333; --muted:#5a5a5a; --soft:#7c7c7c;
+    --line:#111; --line2:#9a9a9a; --line3:#cfcfcf;
+    --paper:#ffffff; --panel:#fafafa; --shadow:#d9d9d9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Helvetica Neue",Arial,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  .mono{font-family:"Courier New",ui-monospace,monospace}
+  .wrap{max-width:1440px;margin:0 auto;padding:40px 28px 80px}
+
+  header.doc{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    border-bottom:3px solid var(--ink);padding-bottom:16px;margin-bottom:10px;flex-wrap:wrap}
+  header.doc h1{font-size:25px;margin:0 0 6px;font-weight:800;letter-spacing:.2px}
+  header.doc p{margin:0;color:var(--muted);font-size:13.5px;max-width:760px}
+  header.doc .meta{font-size:12px;color:var(--soft);text-align:right;line-height:1.8;
+    font-family:"Courier New",monospace}
+  header.doc .meta b{color:var(--ink)}
+  header.doc .meta a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line2)}
+
+  .legend{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--muted);
+    margin:16px 0 4px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .ls{width:30px;height:0;border-top:2px solid var(--ink)}
+  .ls.dash{border-top-style:dashed}
+  .ls.dot{border-top-style:dotted}
+  .ns{width:16px;height:13px;border:1.5px solid var(--ink);background:var(--paper);display:inline-block}
+  .ns.start{border-width:3px}
+  .ns.ext{border-style:dashed}
+  .ns.fin{box-shadow:0 0 0 2px var(--paper),0 0 0 3.5px var(--ink)}
+
+  .stage{overflow-x:auto;padding:10px 4px 4px}
+  .canvas{position:relative;width:1360px;height:980px;margin:0 auto}
+  svg.links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
+  .node{position:absolute;z-index:2;background:var(--paper);border:1.5px solid var(--line);
+    border-radius:3px;padding:14px 16px;box-shadow:5px 6px 0 var(--shadow)}
+  .node .num{position:absolute;top:-12px;left:14px;background:var(--ink);color:var(--paper);
+    font-family:"Courier New",monospace;font-size:12px;font-weight:800;border-radius:3px;padding:2px 8px;line-height:1}
+  .node h3{margin:0 0 8px;font-size:15px;font-weight:800;letter-spacing:.2px}
+  .node ul{margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--ink2);line-height:1.7}
+  .node ul li::before{content:"—";color:var(--soft);margin-right:7px}
+  .node .time{position:absolute;right:14px;bottom:10px;font-size:11px;color:var(--soft);
+    font-family:"Courier New",monospace}
+  .node .time b{color:var(--ink)}
+
+  .node.start{border-width:3px}
+  .node.ext{border-style:dashed;border-width:2px}
+  .node.fin{box-shadow:0 0 0 2px var(--paper),0 0 0 3.5px var(--ink),5px 6px 0 var(--shadow)}
+  .node .pct{position:absolute;top:-12px;right:14px;background:var(--paper);border:1.5px solid var(--ink);
+    color:var(--ink);font-family:"Courier New",monospace;font-size:11px;font-weight:800;border-radius:3px;padding:1px 8px}
+
+  .node.decide{border-radius:3px}
+  .branches{display:grid;grid-template-columns:repeat(4,1fr);margin-top:12px;border-top:1px solid var(--line2)}
+  .branches div{font-size:11px;color:var(--muted);text-align:center;padding:8px 5px 2px;
+    border-right:1px solid var(--line3);line-height:1.4}
+  .branches div:last-child{border-right:none}
+  .branches b{display:block;color:var(--ink);font-size:11px;margin-bottom:2px}
+
+  .badge{position:absolute;z-index:3;font-size:11px;font-weight:700;padding:3px 9px;border-radius:3px;
+    background:var(--paper);border:1.5px solid var(--ink);color:var(--ink);font-family:"Courier New",monospace}
+  .badge.dash{border-style:dashed}
+
+  .store{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:34px}
+  .store .box{background:var(--panel);border:1.5px solid var(--line);border-radius:3px;padding:16px 18px}
+  .store .box h4{margin:0 0 10px;font-size:12px;letter-spacing:.5px;text-transform:uppercase;
+    border-bottom:1px solid var(--line2);padding-bottom:8px}
+  .store .box .row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;
+    padding:6px 0;border-bottom:1px dotted var(--line3);color:var(--muted)}
+  .store .box .row:last-child{border-bottom:none}
+  .store .box .row code{color:var(--ink);font-size:11.5px}
+
+  footer.jobs{margin-top:28px;border-top:1px solid var(--line2);padding-top:16px;font-size:12.5px;color:var(--muted)}
+  footer.jobs b{color:var(--ink)}
+  footer.jobs .chip{display:inline-block;background:var(--paper);border:1.5px solid var(--line);
+    border-radius:3px;padding:3px 11px;margin:6px 6px 0 0;color:var(--ink);font-size:11.5px;
+    font-family:"Courier New",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc">
+    <div>
+      <h1>Конвейер парсинга и нормализации цен</h1>
+      <p>Диаграмма действий: путь данных от запуска парсера до сравнения цен в UI.
+         Каждый источник — изолированная Celery-задача; падение одного не останавливает остальные.</p>
+    </div>
+    <div class="meta">
+      MedServicePrice.kz · <b>diagram of actions</b><br/>
+      backend/app/parsers · tasks/parsing.py<br/>
+      <a href="architecture.html">← Архитектурная документация (C4)</a>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span><i class="ls"></i> поток данных</span>
+    <span><i class="ls dash"></i> в очередь разметки</span>
+    <span><i class="ls dot"></i> обратная связь аналитика</span>
+    <span><i class="ns start"></i> старт (жирная рамка)</span>
+    <span><i class="ns ext"></i> адаптер — расширяемо (пунктир)</span>
+    <span><i class="ns fin"></i> выдача (двойная рамка)</span>
+  </div>
+
+  <div class="stage">
+  <div class="canvas" id="canvas">
+    <svg class="links" id="links" viewBox="0 0 1360 980" preserveAspectRatio="none">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 z" fill="#111"/></marker>
+      </defs>
+    </svg>
+
+    <div class="node start" id="n1" style="left:32px;top:96px;width:296px;height:152px">
+      <span class="num">1</span><h3>Триггеры</h3>
+      <ul>
+        <li>Celery Beat — раз в сутки/источник</li>
+        <li>POST <span class="mono">/api/admin/parse/run</span></li>
+        <li>Загрузка прайс-файла (xlsx·csv·pdf·docx)</li>
+      </ul>
+    </div>
+    <div class="node ext" id="n2" style="left:372px;top:96px;width:296px;height:152px">
+      <span class="num">2</span><h3>Адаптер источника</h3>
+      <ul>
+        <li><span class="mono">registry → BaseParser</span></li>
+        <li>KDL · Invitro · file-import</li>
+        <li>новый источник = 1 класс + 1 строка</li>
+      </ul>
+    </div>
+    <div class="node" id="n3" style="left:712px;top:96px;width:296px;height:152px">
+      <span class="num">3</span><h3>fetch()</h3>
+      <ul>
+        <li>httpx GET · follow redirects</li>
+        <li>robots.txt (наш UA) · задержка</li>
+        <li>ретраи с экспон. задержкой</li>
+      </ul>
+      <span class="time"><b>≈1.5 c</b>/запрос</span>
+    </div>
+    <div class="node" id="n4" style="left:1052px;top:96px;width:296px;height:152px">
+      <span class="num">4</span><h3>parse()</h3>
+      <ul>
+        <li>BeautifulSoup4 / lxml</li>
+        <li>pdfplumber·openpyxl·docx (файлы)</li>
+        <li>→ RawServiceRecord[]</li>
+      </ul>
+    </div>
+    <div class="node" id="n5" style="left:1052px;top:330px;width:296px;height:140px">
+      <span class="num">5</span><h3>Сырой слой</h3>
+      <ul>
+        <li>dedup по <span class="mono">content_hash</span></li>
+        <li>→ <span class="mono">raw_records</span> (аудит, re-parse)</li>
+      </ul>
+      <span class="time">хранение <b>≥90 дней</b></span>
+    </div>
+    <div class="node" id="n6" style="left:712px;top:330px;width:296px;height:140px">
+      <span class="num">6</span><h3>Клиника · upsert</h3>
+      <ul>
+        <li>dedup по <span class="mono">(name, city)</span></li>
+        <li>verified = true (офиц. прайс)</li>
+      </ul>
+    </div>
+    <div class="node decide" id="n7" style="left:360px;top:312px;width:320px;height:188px">
+      <span class="num">7</span><h3>Нормализация</h3>
+      <ul><li><span class="mono">rapidfuzz</span> · справочник услуг</li></ul>
+      <div class="branches">
+        <div><b>Точное</b>имя / синоним</div>
+        <div><b>Fuzzy</b>set≥88 ∧ sort≥60</div>
+        <div><b>Ниже порога</b>в очередь</div>
+        <div><b>Панель</b>не сливаем</div>
+      </div>
+    </div>
+    <div class="node" id="n12" style="left:32px;top:572px;width:296px;height:140px">
+      <span class="num">12</span><h3>Очередь разметки</h3>
+      <ul>
+        <li><span class="mono">unmatched_queue</span> + score</li>
+        <li>аналитик: <span class="mono">/api/admin/unmatched</span></li>
+        <li>привязка · добавить синоним</li>
+      </ul>
+    </div>
+    <div class="node" id="n8" style="left:360px;top:572px;width:296px;height:140px">
+      <span class="num">8</span><h3>Offer · upsert</h3>
+      <ul>
+        <li>dedup по <span class="mono">(clinic_id, offer_hash)</span></li>
+        <li>→ <span class="mono">service_offers</span></li>
+      </ul>
+    </div>
+    <div class="node" id="n9" style="left:712px;top:572px;width:296px;height:140px">
+      <span class="num">9</span><h3>История цен</h3>
+      <ul>
+        <li>точка при изменении цены</li>
+        <li>→ <span class="mono">price_history</span> (график)</li>
+      </ul>
+    </div>
+    <div class="node" id="n10" style="left:360px;top:800px;width:296px;height:132px">
+      <span class="num">10</span><h3>Инвалидация кэша</h3>
+      <ul>
+        <li>Redis · точечно после парса</li>
+        <li><span class="mono">offers:* · ac:* · clinic:*</span></li>
+      </ul>
+    </div>
+    <div class="node fin" id="n11" style="left:712px;top:800px;width:636px;height:132px">
+      <span class="num">11</span><span class="pct">UI</span><h3>API + поиск → React UI</h3>
+      <ul>
+        <li><span class="mono">/api/offers</span> — сравнение по клиникам · фильтры · сортировка</li>
+        <li><span class="mono">/api/services/search</span> — trigram (pg_trgm) + semantic (pgvector) + hybrid (RRF)</li>
+      </ul>
+      <span class="time">поиск <b>≤3 c</b> (с кэшем — мс)</span>
+    </div>
+
+    <div class="badge"      style="left:455px;top:533px">точное · fuzzy ≥88 ∧ sort ≥60</div>
+    <div class="badge dash" style="left:150px;top:520px">ниже порога · панель</div>
+  </div>
+  </div>
+
+  <div class="store">
+    <div class="box">
+      <h4>Дедупликация (БД-уровень)</h4>
+      <div class="row"><span>Сырой слой</span><code>UNIQUE (source_key, content_hash)</code></div>
+      <div class="row"><span>Предложения</span><code>UNIQUE (clinic_id, offer_hash)</code></div>
+      <div class="row"><span>Клиники</span><code>UNIQUE (name, city)</code></div>
+      <div class="row"><span>offer_hash</span><code>sha256(clinic+raw_name+price)</code></div>
+      <div class="row"><span>Re-parse</span><code>идемпотентно (update in place)</code></div>
+    </div>
+    <div class="box">
+      <h4>Изоляция и устойчивость</h4>
+      <div class="row"><span>1 источник</span><code>= 1 Celery task</code></div>
+      <div class="row"><span>Падение источника</span><code>не влияет на другие</code></div>
+      <div class="row"><span>Ошибка строки</span><code>не валит батч (partial)</code></div>
+      <div class="row"><span>Журнал</span><code>parse_logs (success/partial/failed)</code></div>
+      <div class="row"><span>Курс USD→KZT</span><code>НБ РК, кэш 24ч</code></div>
+    </div>
+    <div class="box">
+      <h4>Этика парсинга</h4>
+      <div class="row"><span>robots.txt</span><code>наш UA, реальная политика</code></div>
+      <div class="row"><span>Темп</span><code>задержка + ретраи</code></div>
+      <div class="row"><span>Данные</span><code>только публичные прайсы</code></div>
+      <div class="row"><span>PII</span><code>не собираем</code></div>
+    </div>
+  </div>
+
+  <footer class="jobs">
+    <b>Фоновые задачи Celery Beat</b> (вне основного потока парсинга):
+    <span class="chip">Парс источника — ежедневно, со сдвигом</span>
+    <span class="chip">Пересчёт эмбеддингов — ночью</span>
+    <span class="chip">Геокодинг клиник — для карты</span>
+    <span class="chip">Уведомления о падении цены — 2×/день</span>
+  </footer>
+</div>
+
+<script>
+  const svg = document.getElementById('links');
+  const N = id => document.getElementById(id);
+  const anchor = (el, side) => {
+    const x = el.offsetLeft, y = el.offsetTop, w = el.offsetWidth, h = el.offsetHeight;
+    if (side === 'left')   return [x, y + h/2];
+    if (side === 'right')  return [x + w, y + h/2];
+    if (side === 'top')    return [x + w/2, y];
+    return [x + w/2, y + h];
+  };
+  const horiz = s => s === 'left' || s === 'right';
+  function pathFor(s, e, ss, es) {
+    const [sx,sy] = s, [ex,ey] = e;
+    if (horiz(ss) && horiz(es))   { const mx=(sx+ex)/2; return `M${sx},${sy} H${mx} V${ey} H${ex}`; }
+    if (!horiz(ss) && !horiz(es)) { const my=(sy+ey)/2; return `M${sx},${sy} V${my} H${ex} V${ey}`; }
+    if (horiz(ss) && !horiz(es))  return `M${sx},${sy} H${ex} V${ey}`;
+    return `M${sx},${sy} V${ey} H${ex}`;
+  }
+  const links = [
+    ['n1','right','n2','left'], ['n2','right','n3','left'], ['n3','right','n4','left'],
+    ['n4','bottom','n5','top'], ['n5','left','n6','right'], ['n6','left','n7','right'],
+    ['n7','bottom','n8','top','solid'], ['n7','left','n12','top','dash'],
+    ['n8','right','n9','left'], ['n8','bottom','n10','top'], ['n10','right','n11','left'],
+    ['n12','right','n8','left','dot'],
+  ];
+  for (const [a,as,b,bs,kind] of links) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', pathFor(anchor(N(a),as), anchor(N(b),bs), as, bs));
+    p.setAttribute('fill','none');
+    p.setAttribute('stroke','#111');
+    p.setAttribute('stroke-width', kind === 'dot' ? '1.5' : '2');
+    if (kind === 'dash') p.setAttribute('stroke-dasharray','7 5');
+    if (kind === 'dot')  p.setAttribute('stroke-dasharray','2 4');
+    p.setAttribute('marker-end','url(#ar)');
+    svg.appendChild(p);
+    const [sx,sy] = anchor(N(a),as);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',sx); dot.setAttribute('cy',sy); dot.setAttribute('r','3');
+    dot.setAttribute('fill','#111');
+    svg.appendChild(dot);
+  }
+</script>
+</body>
+</html>
