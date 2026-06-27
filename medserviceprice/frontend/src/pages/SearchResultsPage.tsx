@@ -551,7 +551,13 @@ export function SearchResultsPage() {
                         {o.clinic.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {o.is_lowest && (
+                            <Badge tone="success">
+                              <Icon name="trending_down" className="text-[14px]" />
+                              {t('Best price')}
+                            </Badge>
+                          )}
                           <Link
                             to={`/clinic/${o.clinic.id}`}
                             className="font-headline-md text-headline-md text-text-main dark:text-on-surface group-hover:text-primary transition-colors"
@@ -629,12 +635,6 @@ export function SearchResultsPage() {
                     </div>
 
                     <div className="flex flex-col items-stretch md:items-end gap-3 md:min-w-[180px]">
-                      {o.is_lowest && (
-                        <Badge tone="success" className="self-start md:self-end">
-                          <Icon name="trending_down" className="text-[14px]" />
-                          {t('Best price')}
-                        </Badge>
-                      )}
                       <div className="text-left md:text-right">
                         <div
                           className={cn(

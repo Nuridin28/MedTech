@@ -94,11 +94,13 @@ export function MapView({
       [48.0, 68.0],
       5,
     )
-    // CARTO Voyager basemap — softer, more legible than raw OSM tiles
-    L.tileLayer('https://{s}.basemap.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // Basemap. Defaults to OpenStreetMap (reliably reachable). Override with
+    // VITE_MAP_TILES if you want CARTO/MapTiler/etc. — must include {z}/{x}/{y}.
+    const tileUrl =
+      import.meta.env.VITE_MAP_TILES ?? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    L.tileLayer(tileUrl, {
       maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '© OpenStreetMap, © CARTO',
+      attribution: '© OpenStreetMap',
     }).addTo(map)
     layerRef.current = cluster
       ? (L as any)
