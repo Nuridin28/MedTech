@@ -1,4 +1,5 @@
 import type {
+  AdminStats,
   Alert,
   ClinicDetail,
   ClinicsMapResponse,
@@ -117,6 +118,9 @@ async function adminFetch<T>(path: string, key: string, init?: RequestInit): Pro
 }
 
 export const adminApi = {
+  stats(key: string): Promise<AdminStats> {
+    return adminFetch<AdminStats>('/stats', key)
+  },
   parseLogs(key: string, limit = 50): Promise<ParseLog[]> {
     return adminFetch<ParseLog[]>(`/parse/logs?limit=${limit}`, key)
   },

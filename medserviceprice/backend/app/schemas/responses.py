@@ -169,6 +169,30 @@ class ImportResponse(BaseModel):
     filename: str
 
 
+# --- Admin dashboard / analytics ---
+class SourceHealth(BaseModel):
+    source_key: str
+    registered: bool = True
+    last_status: str | None = None
+    last_records: int | None = None
+    last_finished_at: datetime | None = None
+    stale: bool = False
+
+
+class AdminStats(BaseModel):
+    clinics: int
+    catalog_services: int
+    active_offers: int
+    normalized_offers: int
+    unmatched_pending: int
+    open_alerts: int
+    cities: int
+    sources: list[SourceHealth]
+    offers_by_category: dict[str, int]
+    offers_by_city: dict[str, int]
+    avg_price_by_category: dict[str, float]
+
+
 # --- Operational alerts ---
 class AlertOut(BaseModel):
     id: str

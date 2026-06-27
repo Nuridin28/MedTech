@@ -16,6 +16,7 @@ from app.core.security import require_admin
 from app.models import Alert, ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
 from app.parsers.registry import all_source_keys
 from app.schemas import (
+    AdminStats,
     AlertOut,
     ImportResponse,
     LogsResponse,
@@ -25,6 +26,7 @@ from app.schemas import (
     UnmatchedOut,
     UnmatchedResolve,
 )
+from app.services.admin_stats import get_admin_stats
 from app.services.file_extract import SUPPORTED_EXTENSIONS
 from app.services.log_query import query_logs
 
@@ -34,6 +36,13 @@ router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(re
 def _slug(s: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "_", s.lower().strip()).strip("_")
     return s or "source"
+
+
+@router.get("/stats", response_model=AdminStats)
+async def stats(db: AsyncSession = Depends(get_db)) -> AdminStats:
+    """Dashboard analytics. Doubles as the auth-validation call for the admin SPA
+    (a 200 here means the API key is valid)."""
+    return await get_admin_stats(db)
 
 
 @router.post("/parse/run", response_model=ParseRunResponse)

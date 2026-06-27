@@ -225,6 +225,30 @@ export interface ImportResponse {
   filename: string
 }
 
+/* ---- Admin dashboard ---- */
+export interface SourceHealth {
+  source_key: string
+  registered: boolean
+  last_status: 'success' | 'partial' | 'failed' | null
+  last_records: number | null
+  last_finished_at: string | null
+  stale: boolean
+}
+
+export interface AdminStats {
+  clinics: number
+  catalog_services: number
+  active_offers: number
+  normalized_offers: number
+  unmatched_pending: number
+  open_alerts: number
+  cities: number
+  sources: SourceHealth[]
+  offers_by_category: Record<string, number>
+  offers_by_city: Record<string, number>
+  avg_price_by_category: Record<string, number>
+}
+
 /* ---- Operational alerts ---- */
 export interface Alert {
   id: string
