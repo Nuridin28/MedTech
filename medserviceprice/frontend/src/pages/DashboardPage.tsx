@@ -4,8 +4,10 @@ import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, EmptyState } from '@/components/ui'
 import { formatDate, formatPrice } from '@/lib/utils'
 import { useActivity } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 export function DashboardPage() {
+  const { t } = useI18n()
   const { favoriteClinicIds, bookings, recentSearches } = useActivity()
 
   const upcoming = bookings.filter((b) => b.status === 'upcoming')
@@ -23,13 +25,13 @@ export function DashboardPage() {
         {/* Page header */}
         <header className="mb-8 flex justify-between items-end">
           <div>
-            <h1 className="font-headline-lg text-headline-lg text-text-main mb-1">Health Overview</h1>
+            <h1 className="font-headline-lg text-headline-lg text-text-main mb-1">{t('Health Overview')}</h1>
             <p className="font-body-md text-body-md text-text-subtle">
-              Your clinical summary, built from your own activity.
+              {t('Your clinical summary, built from your own activity.')}
             </p>
           </div>
           <div className="text-right">
-            <Badge tone="success">Verified Account</Badge>
+            <Badge tone="success">{t('Verified Account')}</Badge>
           </div>
         </header>
 
@@ -37,15 +39,15 @@ export function DashboardPage() {
           <div className="glass-card rounded-xl mb-6">
             <EmptyState
               icon="health_metrics"
-              title="Welcome to your dashboard"
-              description="Search for a medical service to compare prices, save the clinics you like, and book appointments. Everything you do shows up here."
+              title={t('Welcome to your dashboard')}
+              description={t('Search for a medical service to compare prices, save the clinics you like, and book appointments. Everything you do shows up here.')}
               action={
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Link to="/search">
-                    <Button>Find a price</Button>
+                    <Button>{t('Find a price')}</Button>
                   </Link>
                   <Link to="/">
-                    <Button variant="outline">Browse home</Button>
+                    <Button variant="outline">{t('Browse home')}</Button>
                   </Link>
                 </div>
               }
@@ -71,12 +73,12 @@ export function DashboardPage() {
                   to="/appointments"
                   className="font-label-bold text-label-bold text-primary underline cursor-pointer"
                 >
-                  View Details
+                  {t('View Details')}
                 </Link>
               )}
             </div>
             <p className="font-label-bold text-label-bold text-text-subtle uppercase tracking-wider mb-2">
-              Next Appointment
+              {t('Next Appointment')}
             </p>
             {nextAppointment ? (
               <>
@@ -93,16 +95,16 @@ export function DashboardPage() {
               </>
             ) : (
               <>
-                <h3 className="font-headline-lg text-headline-lg text-text-main mb-1">No appointments</h3>
+                <h3 className="font-headline-lg text-headline-lg text-text-main mb-1">{t('No appointments')}</h3>
                 <p className="font-body-md text-body-md text-text-subtle mb-4">
-                  You don't have any upcoming visits booked.
+                  {t("You don't have any upcoming visits booked.")}
                 </p>
                 <Link
                   to="/search"
                   className="inline-flex items-center gap-2 text-primary font-label-bold underline"
                 >
                   <Icon name="add_circle" className="text-sm" />
-                  <span>Find a price</span>
+                  <span>{t('Find a price')}</span>
                 </Link>
               </>
             )}
@@ -117,15 +119,15 @@ export function DashboardPage() {
               <Icon name="trending_up" className="text-text-subtle" />
             </div>
             <p className="font-label-bold text-label-bold text-text-subtle uppercase tracking-wider mb-2">
-              Upcoming Spend
+              {t('Upcoming Spend')}
             </p>
             <h3 className="font-price-display text-price-display text-text-main">
               {formatPrice(potentialSpend)}
             </h3>
             <p className="mt-4 font-body-sm text-body-sm text-text-subtle">
               {upcoming.length === 0
-                ? 'No upcoming costs.'
-                : `Across ${upcoming.length} upcoming appointment${upcoming.length === 1 ? '' : 's'}.`}
+                ? t('No upcoming costs.')
+                : `${t('Across')} ${upcoming.length} ${upcoming.length === 1 ? t('upcoming appointment') : t('upcoming appointments')}.`}
             </p>
           </div>
 
@@ -137,30 +139,30 @@ export function DashboardPage() {
               </div>
             </div>
             <p className="font-label-bold text-label-bold text-text-subtle uppercase tracking-wider mb-2">
-              Saved Clinics
+              {t('Saved Clinics')}
             </p>
             <h3 className="font-headline-lg text-headline-lg text-text-main mb-4">
               {favoriteClinicIds.length}{' '}
-              {favoriteClinicIds.length === 1 ? 'Clinic' : 'Clinics'}
+              {favoriteClinicIds.length === 1 ? t('Clinic') : t('Clinics')}
             </h3>
             {favoriteClinicIds.length > 0 ? (
               <Link
                 to="/favorites"
                 className="inline-flex items-center gap-1 text-primary font-label-bold text-label-bold underline"
               >
-                <span>View saved</span>
+                <span>{t('View saved')}</span>
                 <Icon name="chevron_right" className="text-sm" />
               </Link>
             ) : (
               <p className="font-body-sm text-body-sm text-text-subtle">
-                Save a clinic to compare it later.
+                {t('Save a clinic to compare it later.')}
               </p>
             )}
           </div>
 
           {/* Quick Actions */}
           <div className="col-span-12 lg:col-span-4 bg-primary rounded-xl p-6 text-on-primary">
-            <h3 className="font-headline-md text-headline-md mb-6">Quick Actions</h3>
+            <h3 className="font-headline-md text-headline-md mb-6">{t('Quick Actions')}</h3>
             <div className="space-y-4">
               <Link
                 to="/search"
@@ -168,7 +170,7 @@ export function DashboardPage() {
               >
                 <div className="flex items-center gap-3">
                   <Icon name="add_circle" />
-                  <span className="font-label-bold text-label-bold">Find a Price</span>
+                  <span className="font-label-bold text-label-bold">{t('Find a Price')}</span>
                 </div>
                 <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -178,7 +180,7 @@ export function DashboardPage() {
               >
                 <div className="flex items-center gap-3">
                   <Icon name="calendar_today" />
-                  <span className="font-label-bold text-label-bold">My Appointments</span>
+                  <span className="font-label-bold text-label-bold">{t('My Appointments')}</span>
                 </div>
                 <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -188,7 +190,7 @@ export function DashboardPage() {
               >
                 <div className="flex items-center gap-3">
                   <Icon name="description" />
-                  <span className="font-label-bold text-label-bold">Medical Records</span>
+                  <span className="font-label-bold text-label-bold">{t('Medical Records')}</span>
                 </div>
                 <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -198,7 +200,7 @@ export function DashboardPage() {
           {/* Upcoming Appointments preview (real activity) */}
           <div className="col-span-12 lg:col-span-8 glass-card rounded-xl overflow-hidden">
             <div className="p-6 border-b border-outline-variant flex justify-between items-center">
-              <h3 className="font-headline-md text-headline-md">Upcoming Appointments</h3>
+              <h3 className="font-headline-md text-headline-md">{t('Upcoming Appointments')}</h3>
               <Link to="/appointments" className="text-text-subtle hover:text-primary">
                 <Icon name="more_horiz" />
               </Link>
@@ -236,7 +238,7 @@ export function DashboardPage() {
                   to="/appointments"
                   className="block w-full py-4 bg-surface-container-low text-primary font-label-bold text-center hover:bg-surface-container-high transition-colors"
                 >
-                  View All Appointments
+                  {t('View All Appointments')}
                 </Link>
               </>
             ) : (
@@ -245,10 +247,10 @@ export function DashboardPage() {
                   <Icon name="calendar_today" className="text-outline" />
                 </div>
                 <p className="font-body-sm text-body-sm text-text-subtle max-w-sm">
-                  No upcoming appointments yet. Compare prices and book your first visit.
+                  {t('No upcoming appointments yet. Compare prices and book your first visit.')}
                 </p>
                 <Link to="/search">
-                  <Button>Find a price</Button>
+                  <Button>{t('Find a price')}</Button>
                 </Link>
               </div>
             )}
@@ -257,9 +259,9 @@ export function DashboardPage() {
           {/* Recent Searches (real activity) */}
           <div className="col-span-12 glass-card rounded-xl p-8 relative overflow-hidden flex flex-col gap-6">
             <div className="max-w-2xl">
-              <h3 className="font-headline-lg text-headline-lg text-text-main mb-2">Recent Searches</h3>
+              <h3 className="font-headline-lg text-headline-lg text-text-main mb-2">{t('Recent Searches')}</h3>
               <p className="font-body-md text-body-md text-text-subtle">
-                Pick up where you left off — re-run any of your latest searches.
+                {t('Pick up where you left off — re-run any of your latest searches.')}
               </p>
             </div>
             {recentPreview.length > 0 ? (
@@ -280,9 +282,9 @@ export function DashboardPage() {
               <div className="flex items-center gap-3 text-text-subtle">
                 <Icon name="search_off" />
                 <span className="font-body-sm text-body-sm">
-                  No searches yet.{' '}
+                  {t('No searches yet.')}{' '}
                   <Link to="/search" className="text-primary font-label-bold underline">
-                    Start one now
+                    {t('Start one now')}
                   </Link>
                   .
                 </span>

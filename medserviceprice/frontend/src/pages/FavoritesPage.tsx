@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, Rating, EmptyState, Skeleton } from '@/components/ui'
 import { cn, formatPrice } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { useActivity, activityStore } from '@/lib/store'
 import { api } from '@/api/client'
 import type { ClinicDetail } from '@/api/types'
@@ -36,6 +37,7 @@ function ClinicSkeletonCard() {
 }
 
 function ClinicCard({ clinic }: { clinic: ClinicDetail }) {
+  const { t } = useI18n()
   const cheapest = cheapestPrice(clinic)
 
   return (
@@ -84,7 +86,7 @@ function ClinicCard({ clinic }: { clinic: ClinicDetail }) {
           <div className="mb-3">
             <Badge tone="primary">
               <Icon name="verified" className="text-[14px]" filled />
-              Verified
+              {t('Verified')}
             </Badge>
           </div>
         )}
@@ -101,11 +103,11 @@ function ClinicCard({ clinic }: { clinic: ClinicDetail }) {
         <div className="flex flex-wrap items-center gap-2 mb-6">
           {cheapest != null && (
             <span className="bg-surface-container-low text-text-subtle text-[11px] font-label-bold px-2 py-1 rounded uppercase tracking-wider">
-              From {formatPrice(cheapest)}
+              {t('From')} {formatPrice(cheapest)}
             </span>
           )}
           <span className="bg-surface-container-low text-text-subtle text-[11px] font-label-bold px-2 py-1 rounded uppercase tracking-wider">
-            {clinic.services.length} {clinic.services.length === 1 ? 'service' : 'services'}
+            {clinic.services.length} {clinic.services.length === 1 ? t('service') : t('services')}
           </span>
         </div>
 
@@ -113,7 +115,7 @@ function ClinicCard({ clinic }: { clinic: ClinicDetail }) {
           to={`/clinic/${clinic.id}`}
           className="mt-auto w-full text-center border-2 border-secondary text-secondary py-2 rounded-lg font-label-bold text-label-bold hover:bg-secondary hover:text-on-secondary transition-all block"
         >
-          View Clinic Profile
+          {t('View Clinic Profile')}
         </Link>
       </div>
     </motion.div>
@@ -121,6 +123,7 @@ function ClinicCard({ clinic }: { clinic: ClinicDetail }) {
 }
 
 export function FavoritesPage() {
+  const { t } = useI18n()
   const { favoriteClinicIds } = useActivity()
   const [sort, setSort] = useState<SortKey>('name')
 
@@ -154,23 +157,23 @@ export function FavoritesPage() {
   return (
     <main className="flex-grow p-8 max-w-[1200px] mx-auto w-full">
       <header className="mb-8">
-        <h1 className="font-headline-lg text-headline-lg text-text-main mb-2">Saved Clinics &amp; Favorites</h1>
+        <h1 className="font-headline-lg text-headline-lg text-text-main mb-2">{t('Saved Clinics & Favorites')}</h1>
         <p className="text-text-subtle font-body-md">
-          Manage your preferred medical providers and compare their prices in one place.
+          {t('Manage your preferred medical providers and compare their prices in one place.')}
         </p>
       </header>
 
       {savedCount === 0 ? (
         <EmptyState
           icon="favorite_border"
-          title="No saved clinics yet"
-          description="Tap the heart on any clinic to keep it here. Saved clinics make it easy to track prices and rebook quickly."
+          title={t('No saved clinics yet')}
+          description={t('Tap the heart on any clinic to keep it here. Saved clinics make it easy to track prices and rebook quickly.')}
           action={
             <Link to="/search">
               <Button variant="primary">
                 <span className="inline-flex items-center gap-2">
                   <Icon name="search" className="text-[18px]" />
-                  Browse clinics
+                  {t('Browse clinics')}
                 </span>
               </Button>
             </Link>
@@ -180,11 +183,11 @@ export function FavoritesPage() {
         <section>
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <h2 className="font-headline-md text-headline-md text-text-main">
-              {savedCount} {savedCount === 1 ? 'saved clinic' : 'saved clinics'}
+              {savedCount} {savedCount === 1 ? t('saved clinic') : t('saved clinics')}
             </h2>
 
             <div className="flex items-center gap-2" role="group" aria-label="Sort saved clinics">
-              <span className="text-text-subtle text-body-sm">Sort by</span>
+              <span className="text-text-subtle text-body-sm">{t('Sort by')}</span>
               {(['name', 'rating'] as const).map((key) => (
                 <button
                   key={key}
@@ -198,7 +201,7 @@ export function FavoritesPage() {
                       : 'text-text-subtle hover:bg-surface-container-high',
                   )}
                 >
-                  {key}
+                  {t(key)}
                 </button>
               ))}
             </div>

@@ -100,7 +100,11 @@ async def offers(
     price_max: float | None = Query(None, ge=0),
     max_duration_days: int | None = Query(None, ge=0, le=365),
     verified_only: bool = Query(False),
-    sort: str = Query("price_asc", pattern="^(price_asc|price_desc|updated_desc|rating_desc)$"),
+    min_rating: float | None = Query(None, ge=0, le=5),
+    online_booking: bool = Query(False),
+    user_lat: float | None = Query(None, ge=-90, le=90),
+    user_lng: float | None = Query(None, ge=-180, le=180),
+    sort: str = Query("price_asc", pattern="^(price_asc|price_desc|updated_desc|rating_desc|distance)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),  # cap per TZ §11
     db: AsyncSession = Depends(get_db),
@@ -115,7 +119,12 @@ async def offers(
         "service_id": str(service_id) if service_id else None,
         "city": city, "category": category, "price_min": price_min,
         "price_max": price_max, "max_duration_days": max_duration_days,
-        "verified_only": verified_only, "sort": sort, "page": page, "page_size": page_size,
+        "verified_only": verified_only, "min_rating": min_rating,
+        "online_booking": online_booking,
+        # round coords so nearby requests share a cache entry
+        "user_lat": round(user_lat, 3) if user_lat is not None else None,
+        "user_lng": round(user_lng, 3) if user_lng is not None else None,
+        "sort": sort, "page": page, "page_size": page_size,
     }
     cache_key = "offers:" + hashlib.sha256(str(sorted(params.items())).encode()).hexdigest()[:24]
     cached = await cache_get(cache_key)
@@ -125,7 +134,8 @@ async def offers(
     resp = await queries.get_offers(
         db, service_id=service_id, city=city, category=category,
         price_min=price_min, price_max=price_max, max_duration_days=max_duration_days,
-        verified_only=verified_only, sort=sort, page=page, page_size=page_size,
+        verified_only=verified_only, min_rating=min_rating, online_booking=online_booking,
+        user_lat=user_lat, user_lng=user_lng, sort=sort, page=page, page_size=page_size,
     )
     await cache_set(cache_key, resp.model_dump(mode="json"), settings.cache_ttl_offers)
     return resp

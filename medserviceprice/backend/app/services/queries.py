@@ -51,6 +51,7 @@ def _clinic_mini(c: Clinic) -> ClinicMini:
         photo_url=c.photo_url,
         logo_color=color_for(c.name),
         verified=bool(c.verified),
+        has_online_booking=bool(c.has_online_booking),
     )
 
 
@@ -84,7 +85,17 @@ async def get_offers(
     page_size: int,
     max_duration_days: int | None = None,
     verified_only: bool = False,
+    min_rating: float | None = None,
+    online_booking: bool = False,
+    user_lat: float | None = None,
+    user_lng: float | None = None,
 ) -> OffersResponse:
+    has_user_loc = user_lat is not None and user_lng is not None
+
+    def _dist_sql():
+        return (Clinic.lat - user_lat) * (Clinic.lat - user_lat) + (
+            Clinic.lng - user_lng
+        ) * (Clinic.lng - user_lng)
     base = (
         select(ServiceOffer)
         .join(Clinic, ServiceOffer.clinic_id == Clinic.id)
@@ -107,6 +118,10 @@ async def get_offers(
         base = base.where(ServiceOffer.duration_days <= max_duration_days)
     if verified_only:
         base = base.where(Clinic.verified.is_(True))
+    if min_rating is not None:
+        base = base.where(Clinic.rating >= min_rating)
+    if online_booking:
+        base = base.where(Clinic.has_online_booking.is_(True))
 
     # When comparing a single service, collapse to ONE row per clinic (the cheapest)
     # so the comparison stays clean even if normalization merged a couple of raw
@@ -121,14 +136,21 @@ async def get_offers(
         collapsed = list(best.values())
         prices = [float(o.price_kzt) for o in collapsed]
         lowest = min(prices) if prices else None
-        key_map = {
-            "price_desc": (lambda o: float(o.price_kzt), True),
-            "updated_desc": (lambda o: o.parsed_at, True),
-            "rating_desc": (lambda o: (o.clinic.rating or 0.0), True),
-            "price_asc": (lambda o: float(o.price_kzt), False),
-        }
-        keyf, rev = key_map.get(sort, key_map["price_asc"])
-        collapsed.sort(key=keyf, reverse=rev)
+        if sort == "distance" and has_user_loc:
+            def _dist_py(o):
+                if o.clinic.lat is None or o.clinic.lng is None:
+                    return float("inf")
+                return (o.clinic.lat - user_lat) ** 2 + (o.clinic.lng - user_lng) ** 2
+            collapsed.sort(key=_dist_py)
+        else:
+            key_map = {
+                "price_desc": (lambda o: float(o.price_kzt), True),
+                "updated_desc": (lambda o: o.parsed_at, True),
+                "rating_desc": (lambda o: (o.clinic.rating or 0.0), True),
+                "price_asc": (lambda o: float(o.price_kzt), False),
+            }
+            keyf, rev = key_map.get(sort, key_map["price_asc"])
+            collapsed.sort(key=keyf, reverse=rev)
         start = (page - 1) * page_size
         page_rows = collapsed[start : start + page_size]
         items = [
@@ -162,7 +184,10 @@ async def get_offers(
         "updated_desc": ServiceOffer.parsed_at.desc(),
         "rating_desc": Clinic.rating.desc().nullslast(),
     }
-    base = base.order_by(sort_map.get(sort, ServiceOffer.price_kzt.asc()))
+    if sort == "distance" and has_user_loc:
+        base = base.order_by(_dist_sql().asc().nullslast())
+    else:
+        base = base.order_by(sort_map.get(sort, ServiceOffer.price_kzt.asc()))
     base = base.limit(page_size).offset((page - 1) * page_size)
 
     rows = (await db.execute(base)).scalars().all()
@@ -232,6 +257,7 @@ async def get_clinic_detail(db: AsyncSession, clinic_id: uuid.UUID) -> ClinicDet
         socials=list(clinic.socials or []),
         logo_color=color_for(clinic.name),
         verified=bool(clinic.verified),
+        has_online_booking=bool(clinic.has_online_booking),
         services=lines,
         reviews=[
             ClinicReviewOut(

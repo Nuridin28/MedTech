@@ -1,7 +1,9 @@
 import { Link, NavLink } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/lib/theme'
+import { useI18n } from '@/lib/i18n'
 
 const NAV = [
   { to: '/search', label: 'Clinics' },
@@ -14,6 +16,7 @@ const NAV = [
 /** Shared TopNavBar — lifted from the Stitch screens, wired to the router. */
 export function TopNav() {
   const { theme, toggle } = useTheme()
+  const { t } = useI18n()
   return (
     <header className="bg-surface-container-lowest dark:bg-dark-surface-container border-b border-outline-variant dark:border-outline sticky top-0 z-50">
       <nav className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto h-20">
@@ -38,12 +41,13 @@ export function TopNav() {
                   )
                 }
               >
-                {item.label}
+                {t(item.label)}
               </NavLink>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSwitcher />
           <button
             onClick={toggle}
             aria-label="Toggle dark mode"
@@ -62,7 +66,7 @@ export function TopNav() {
             to="/dashboard"
             className="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-bold text-label-bold active:opacity-80 transition-all"
           >
-            Sign In
+            {t('Sign In')}
           </Link>
         </div>
       </nav>

@@ -5,6 +5,7 @@ import { Badge, Button, FreshnessTag, Rating, EmptyState, Skeleton } from '@/com
 import { cn, formatPrice, formatDate } from '@/lib/utils'
 import { useOffers, usePriceHistory } from '@/hooks/queries'
 import { activityStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 import type { Offer, PriceHistoryResponse } from '@/api/types'
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -16,6 +17,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 /** Inline SVG line/area chart for price history — no chart library. */
 function PriceHistoryChart({ history }: { history: PriceHistoryResponse }) {
+  const { t } = useI18n()
   const points = history.points
   if (points.length === 0) return null
 
@@ -44,14 +46,14 @@ function PriceHistoryChart({ history }: { history: PriceHistoryResponse }) {
     <section className="mb-16">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
         <div>
-          <h2 className="font-headline-lg text-headline-lg mb-2">Price History</h2>
-          <p className="text-text-subtle">How prices for this service have moved over time.</p>
+          <h2 className="font-headline-lg text-headline-lg mb-2">{t('Price History')}</h2>
+          <p className="text-text-subtle">{t('How prices for this service have moved over time.')}</p>
         </div>
         {trendPct !== 0 && (
           <Badge tone={trendUp ? 'error' : 'success'}>
             <Icon name={trendUp ? 'trending_up' : 'trending_down'} className="text-[16px]" />
             {trendUp ? '+' : ''}
-            {trendPct}% {trendUp ? 'increase' : trendDown ? 'decrease' : ''}
+            {trendPct}% {trendUp ? t('increase') : trendDown ? t('decrease') : ''}
           </Badge>
         )}
       </div>
@@ -61,7 +63,7 @@ function PriceHistoryChart({ history }: { history: PriceHistoryResponse }) {
           className="w-full h-56"
           preserveAspectRatio="none"
           role="img"
-          aria-label="Price history line chart"
+          aria-label={t('Price history line chart')}
         >
           <polygon points={area} className="fill-primary/10" />
           <polyline
@@ -87,6 +89,7 @@ function PriceHistoryChart({ history }: { history: PriceHistoryResponse }) {
 
 /** "Subscribe to price drops" form — local state only. */
 function PriceDropSubscribe() {
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
 
@@ -94,15 +97,15 @@ function PriceDropSubscribe() {
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 h-full flex flex-col justify-center">
       <div className="flex items-center gap-3 mb-3 text-secondary">
         <Icon name="notifications_active" filled />
-        <h3 className="font-label-bold text-lg">Track this price</h3>
+        <h3 className="font-label-bold text-lg">{t('Track this price')}</h3>
       </div>
       <p className="text-on-surface-variant font-body-md mb-4">
-        Get notified by email when a clinic drops its price for this service.
+        {t('Get notified by email when a clinic drops its price for this service.')}
       </p>
       {subscribed ? (
         <p className="inline-flex items-center gap-2 text-success-green font-label-bold">
           <Icon name="check_circle" filled />
-          You&apos;re subscribed to price drops.
+          {t("You're subscribed to price drops.")}
         </p>
       ) : (
         <form
@@ -117,12 +120,12 @@ function PriceDropSubscribe() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            aria-label="Email for price drop alerts"
+            placeholder={t('your@email.com')}
+            aria-label={t('Email for price drop alerts')}
             className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-text-subtle focus-visible:ring-2 focus-visible:ring-primary outline-none"
           />
           <Button type="submit" variant="secondary">
-            Notify me
+            {t('Notify me')}
           </Button>
         </form>
       )}
@@ -137,6 +140,7 @@ function ClinicRow({
   offer: Offer
   onBook: (o: Offer) => void
 }) {
+  const { t } = useI18n()
   const { clinic } = offer
   return (
     <tr
@@ -181,12 +185,12 @@ function ClinicRow({
           <p className="font-price-display text-price-display text-primary">
             {formatPrice(offer.price_kzt)}
           </p>
-          {offer.is_lowest && <Badge tone="success">Best price</Badge>}
+          {offer.is_lowest && <Badge tone="success">{t('Best price')}</Badge>}
         </div>
       </td>
       <td className="p-4 text-right">
         <Button variant="outline" onClick={() => onBook(offer)}>
-          Book
+          {t('Book')}
         </Button>
       </td>
     </tr>
@@ -194,6 +198,7 @@ function ClinicRow({
 }
 
 export function ServiceDetailPage() {
+  const { t } = useI18n()
   const { serviceId } = useParams()
   const navigate = useNavigate()
 
@@ -248,18 +253,18 @@ export function ServiceDetailPage() {
       <main className="pt-28 pb-16 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
         <EmptyState
           icon={offersQuery.isError ? 'error' : 'search_off'}
-          title={offersQuery.isError ? 'Could not load offers' : 'No offers found'}
+          title={offersQuery.isError ? t('Could not load offers') : t('No offers found')}
           description={
             offersQuery.isError
-              ? 'Something went wrong while fetching prices for this service. Please try again.'
-              : 'We have no current price data for this service. Try searching for another one.'
+              ? t('Something went wrong while fetching prices for this service. Please try again.')
+              : t('We have no current price data for this service. Try searching for another one.')
           }
           action={
             <Link
               to="/search"
               className="px-6 py-2.5 rounded-lg font-label-bold bg-primary text-on-primary hover:bg-primary-container transition-all"
             >
-              Back to search
+              {t('Back to search')}
             </Link>
           }
         />
@@ -267,7 +272,7 @@ export function ServiceDetailPage() {
     )
   }
 
-  const serviceName = items[0]?.service_name_norm ?? 'Service'
+  const serviceName = items[0]?.service_name_norm ?? t('Service')
   const category = items[0]?.category
   const priceMin = data?.price_min ?? Math.min(...items.map((o) => o.price_kzt))
   const priceMax = data?.price_max ?? Math.max(...items.map((o) => o.price_kzt))
@@ -285,7 +290,7 @@ export function ServiceDetailPage() {
         <div className="lg:col-span-8">
           <nav className="flex items-center gap-2 text-text-subtle mb-4 font-body-sm">
             <Link className="hover:text-primary" to="/search">
-              Services
+              {t('Services')}
             </Link>
             <Icon name="chevron_right" className="text-[14px]" />
             {category && (
@@ -301,9 +306,11 @@ export function ServiceDetailPage() {
             {category && <Badge tone="primary">{CATEGORY_LABEL[category] ?? category}</Badge>}
           </div>
           <p className="text-on-surface-variant font-body-lg mb-8 leading-relaxed">
-            Compare verified prices for {serviceName} across {items.length}{' '}
-            {items.length === 1 ? 'clinic' : 'clinics'} in your city. All prices are sourced from
-            public clinic data and tagged with their freshness.
+            {t('Compare verified prices for')} {serviceName} {t('across')} {items.length}{' '}
+            {items.length === 1 ? t('clinic') : t('clinics')}{' '}
+            {t(
+              'in your city. All prices are sourced from public clinic data and tagged with their freshness.',
+            )}
           </p>
 
           {/* Stats Bento */}
@@ -311,7 +318,7 @@ export function ServiceDetailPage() {
             <div className="p-6 bg-surface-container-low rounded-xl border border-outline-variant">
               <div className="flex items-center gap-3 mb-3 text-success-green">
                 <Icon name="trending_down" filled />
-                <h3 className="font-label-bold text-lg">Lowest</h3>
+                <h3 className="font-label-bold text-lg">{t('Lowest')}</h3>
               </div>
               <p className="font-price-display text-price-display text-on-surface">
                 {formatPrice(priceMin)}
@@ -320,7 +327,7 @@ export function ServiceDetailPage() {
             <div className="p-6 bg-surface-container-low rounded-xl border border-outline-variant">
               <div className="flex items-center gap-3 mb-3 text-primary">
                 <Icon name="bar_chart" filled />
-                <h3 className="font-label-bold text-lg">Average</h3>
+                <h3 className="font-label-bold text-lg">{t('Average')}</h3>
               </div>
               <p className="font-price-display text-price-display text-on-surface">
                 {formatPrice(priceAvg)}
@@ -329,7 +336,7 @@ export function ServiceDetailPage() {
             <div className="p-6 bg-surface-container-low rounded-xl border border-outline-variant">
               <div className="flex items-center gap-3 mb-3 text-warning-orange">
                 <Icon name="trending_up" filled />
-                <h3 className="font-label-bold text-lg">Highest</h3>
+                <h3 className="font-label-bold text-lg">{t('Highest')}</h3>
               </div>
               <p className="font-price-display text-price-display text-on-surface">
                 {formatPrice(priceMax)}
@@ -345,28 +352,28 @@ export function ServiceDetailPage() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-text-subtle font-label-bold uppercase tracking-wider mb-1">
-                    Average Price
+                    {t('Average Price')}
                   </h3>
                   <p className="text-primary font-price-display text-3xl">{formatPrice(priceAvg)}</p>
                 </div>
                 <span className="bg-secondary/10 text-secondary px-3 py-1 rounded-full font-label-bold text-xs uppercase">
-                  Market Insight
+                  {t('Market Insight')}
                 </span>
               </div>
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between font-body-sm">
-                  <span className="text-text-subtle">Lowest price found:</span>
+                  <span className="text-text-subtle">{t('Lowest price found:')}</span>
                   <span className="text-on-surface font-label-bold">{formatPrice(priceMin)}</span>
                 </div>
                 <div className="flex justify-between font-body-sm">
-                  <span className="text-text-subtle">Highest price found:</span>
+                  <span className="text-text-subtle">{t('Highest price found:')}</span>
                   <span className="text-on-surface font-label-bold">{formatPrice(priceMax)}</span>
                 </div>
                 <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
                   <div className="bg-primary h-full" style={{ width: `${avgPct}%` }} />
                 </div>
                 <p className="text-text-subtle font-body-sm">
-                  {items.length} {items.length === 1 ? 'clinic' : 'clinics'} compared
+                  {items.length} {items.length === 1 ? t('clinic') : t('clinics')} {t('compared')}
                 </p>
               </div>
             </div>
@@ -376,7 +383,7 @@ export function ServiceDetailPage() {
               onClick={() => handleBook(sorted[0])}
             >
               <Icon name="bolt" />
-              Book best offer
+              {t('Book best offer')}
             </Button>
           </div>
         </div>
@@ -387,20 +394,20 @@ export function ServiceDetailPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
           <div>
             <h2 className="font-headline-lg text-headline-lg mb-2">
-              {items.length} {items.length === 1 ? 'Clinic' : 'Clinics'} for {serviceName}
+              {items.length} {items.length === 1 ? t('Clinic') : t('Clinics')} {t('for')} {serviceName}
             </h2>
-            <p className="text-text-subtle">Sorted by price — cheapest first.</p>
+            <p className="text-text-subtle">{t('Sorted by price — cheapest first.')}</p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="text-left border-b border-outline-variant bg-surface-container-low">
-                <th className="p-4 font-label-bold text-text-subtle">Clinic</th>
-                <th className="p-4 font-label-bold text-text-subtle">Rating</th>
-                <th className="p-4 font-label-bold text-text-subtle">Freshness</th>
-                <th className="p-4 font-label-bold text-text-subtle">Price</th>
-                <th className="p-4 font-label-bold text-text-subtle text-right">Action</th>
+                <th className="p-4 font-label-bold text-text-subtle">{t('Clinic')}</th>
+                <th className="p-4 font-label-bold text-text-subtle">{t('Rating')}</th>
+                <th className="p-4 font-label-bold text-text-subtle">{t('Freshness')}</th>
+                <th className="p-4 font-label-bold text-text-subtle">{t('Price')}</th>
+                <th className="p-4 font-label-bold text-text-subtle text-right">{t('Action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant bg-surface-container-lowest">

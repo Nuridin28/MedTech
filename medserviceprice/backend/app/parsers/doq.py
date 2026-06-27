@@ -129,6 +129,9 @@ class DoqParser(BaseParser):
                         if clinic_slug
                         else None
                     )
+                    # doq publishes a 0..10 feedback score + count per branch.
+                    fb_score = branch.get("feedback_score")
+                    rating = round(float(fb_score) / 2, 1) if fb_score else None  # → 0..5
                     clinic = RawClinic(
                         name=branch.get("name") or "doq clinic",
                         city=self.city_name,
@@ -137,6 +140,9 @@ class DoqParser(BaseParser):
                         lat=loc.get("lat"),
                         lng=loc.get("lng"),
                         source_url=clinic_url,
+                        rating=rating,
+                        reviews_count=int(branch.get("feedback_count") or 0),
+                        has_online_booking=True,  # doq.kz clinics accept online booking
                     )
                     records.append(
                         RawServiceRecord(

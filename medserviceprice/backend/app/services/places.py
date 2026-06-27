@@ -8,6 +8,7 @@ is a safe no-op. Enable by setting PLACES_PROVIDER + the matching key.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 
 import httpx
@@ -85,14 +86,19 @@ def _google_photo(name: str, city: str) -> str | None:
 def _google_place_photos(place_id: str) -> list:
     key = settings.google_places_key
     with httpx.Client(timeout=15) as c:
-        r = c.get(
-            f"https://places.googleapis.com/v1/places/{place_id}",
-            headers={"X-Goog-Api-Key": key, "X-Goog-FieldMask": "photos"},
-        )
-        if r.status_code != 200:
+        for attempt in range(3):
+            r = c.get(
+                f"https://places.googleapis.com/v1/places/{place_id}",
+                headers={"X-Goog-Api-Key": key, "X-Goog-FieldMask": "photos"},
+            )
+            if r.status_code == 200:
+                return r.json().get("photos") or []
+            if r.status_code == 429:  # per-minute quota — back off and retry
+                time.sleep(2 * (attempt + 1))
+                continue
             logger.warning("google place photos %s: %s %s", place_id, r.status_code, r.text[:120])
             return []
-        return r.json().get("photos") or []
+    return []
 
 
 def _google_search_new(name: str, city: str, field_mask: str) -> dict | None:
@@ -206,7 +212,7 @@ def _fetch_google(name: str, city: str) -> PlaceInfo | None:
         source="google",
         rating=place.get("rating"),
         reviews_count=place.get("userRatingCount"),
-        photo_url=_google_resolve_photo(place.get("photos") or []),
+        photo_url=_google_resolve_photo(_google_place_photos(pid)),
         address=place.get("formattedAddress"),
         lat=loc.get("latitude"),
         lng=loc.get("longitude"),

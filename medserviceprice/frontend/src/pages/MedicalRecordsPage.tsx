@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, EmptyState } from '@/components/ui'
 import { cn, formatDate } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { useActivity } from '@/lib/store'
 import type { BookingDraft } from '@/lib/store'
 import type { ServiceCategory } from '@/api/types'
@@ -31,6 +32,7 @@ function monthKey(iso: string): string {
 }
 
 export function MedicalRecordsPage() {
+  const { t } = useI18n()
   const { bookings } = useActivity()
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all')
@@ -80,9 +82,9 @@ export function MedicalRecordsPage() {
       {/* Page Header & Action */}
       <div className="max-w-container-max mx-auto w-full mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-headline-lg text-headline-lg text-text-main">Medical Records</h1>
+          <h1 className="font-headline-lg text-headline-lg text-text-main">{t('Medical Records')}</h1>
           <p className="text-text-subtle font-body-md mt-1">
-            Results from your completed appointments, in one secure place.
+            {t('Results from your completed appointments, in one secure place.')}
           </p>
         </div>
         <Link
@@ -90,7 +92,7 @@ export function MedicalRecordsPage() {
           className="flex items-center justify-center gap-2 px-6 py-3 bg-secondary text-on-secondary rounded-lg font-label-bold shadow-md hover:bg-secondary-container hover:text-on-secondary-container transition-all active:scale-[0.98]"
         >
           <Icon name="calendar_today" filled />
-          View Appointments
+          {t('View Appointments')}
         </Link>
       </div>
 
@@ -101,11 +103,11 @@ export function MedicalRecordsPage() {
             <Icon name="info" filled />
           </div>
           <div>
-            <p className="font-label-bold text-label-bold">Records sync is not connected yet</p>
+            <p className="font-label-bold text-label-bold">{t('Records sync is not connected yet')}</p>
             <p className="font-body-sm mt-1">
-              Live document sync with clinics requires EHR integration and isn&apos;t available in
-              this preview. The entries below are generated from your completed appointments —
-              their actual results will appear here once sync is enabled.
+              {t(
+                "Live document sync with clinics requires EHR integration and isn't available in this preview. The entries below are generated from your completed appointments — their actual results will appear here once sync is enabled.",
+              )}
             </p>
           </div>
         </div>
@@ -119,7 +121,7 @@ export function MedicalRecordsPage() {
           </div>
           <div>
             <p className="text-text-subtle text-[12px] font-label-bold uppercase tracking-wider">
-              Completed Visits
+              {t('Completed Visits')}
             </p>
             <p className="font-headline-md text-headline-md">{completed.length}</p>
           </div>
@@ -130,10 +132,10 @@ export function MedicalRecordsPage() {
           </div>
           <div>
             <p className="text-text-subtle text-[12px] font-label-bold uppercase tracking-wider">
-              Storage Status
+              {t('Storage Status')}
             </p>
             <p className="font-headline-md text-headline-md text-success-green">
-              Securely Encrypted
+              {t('Securely Encrypted')}
             </p>
           </div>
         </div>
@@ -143,9 +145,9 @@ export function MedicalRecordsPage() {
           </div>
           <div>
             <p className="text-text-subtle text-[12px] font-label-bold uppercase tracking-wider">
-              Results Sync
+              {t('Results Sync')}
             </p>
-            <p className="font-headline-md text-headline-md text-warning-orange">Pending</p>
+            <p className="font-headline-md text-headline-md text-warning-orange">{t('Pending')}</p>
           </div>
         </div>
       </div>
@@ -162,7 +164,7 @@ export function MedicalRecordsPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search records..."
+                placeholder={t('Search records...')}
                 aria-label="Search records by title"
                 className="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-sm outline-none"
               />
@@ -179,7 +181,7 @@ export function MedicalRecordsPage() {
                     : 'bg-surface-container-low text-text-subtle hover:bg-surface-container-high',
                 )}
               >
-                All
+                {t('All')}
               </button>
               {presentCategories.map((cat) => (
                 <button
@@ -194,7 +196,7 @@ export function MedicalRecordsPage() {
                       : 'bg-surface-container-low text-text-subtle hover:bg-surface-container-high',
                   )}
                 >
-                  {CATEGORY_LABEL[cat]}
+                  {t(CATEGORY_LABEL[cat])}
                 </button>
               ))}
             </div>
@@ -204,7 +206,7 @@ export function MedicalRecordsPage() {
           <div className="max-w-container-max mx-auto w-full flex-1">
             {groups.length === 0 ? (
               <div className="text-center py-16 text-text-subtle font-body-md">
-                No records match your search.
+                {t('No records match your search.')}
               </div>
             ) : (
               groups.map(([key, items]) => (
@@ -231,11 +233,11 @@ export function MedicalRecordsPage() {
         <div className="max-w-container-max mx-auto w-full flex-1">
           <EmptyState
             icon="folder_off"
-            title="No records yet"
-            description="Your results will appear here after completed appointments."
+            title={t('No records yet')}
+            description={t('Your results will appear here after completed appointments.')}
             action={
               <Link to="/appointments">
-                <Button variant="primary">View Appointments</Button>
+                <Button variant="primary">{t('View Appointments')}</Button>
               </Link>
             }
           />
@@ -247,6 +249,7 @@ export function MedicalRecordsPage() {
 
 /** A single record entry, derived from one completed booking. */
 function RecordCard({ booking }: { booking: BookingDraft }) {
+  const { t } = useI18n()
   const [showNote, setShowNote] = useState(false)
 
   return (
@@ -274,10 +277,10 @@ function RecordCard({ booking }: { booking: BookingDraft }) {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Badge tone="primary">{CATEGORY_LABEL[booking.category]}</Badge>
+          <Badge tone="primary">{t(CATEGORY_LABEL[booking.category])}</Badge>
           <Badge tone="warning">
             <Icon name="schedule" className="text-[14px]" filled />
-            Results pending
+            {t('Results pending')}
           </Badge>
           <button
             type="button"
@@ -286,16 +289,15 @@ function RecordCard({ booking }: { booking: BookingDraft }) {
             className="flex-1 md:flex-none px-4 py-2 border border-outline text-text-main rounded-lg font-label-bold text-sm hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2"
           >
             <Icon name={showNote ? 'expand_less' : 'info'} className="text-[18px]" filled />
-            Why pending?
+            {t('Why pending?')}
           </button>
         </div>
       </div>
 
       {showNote && (
         <div className="mt-4 pt-4 border-t border-outline-variant text-text-subtle font-body-sm">
-          Results for this visit aren&apos;t downloadable yet. Once {booking.clinic_name} is
-          connected to the records sync, the report and any lab files will appear here
-          automatically. No documents are fabricated in this preview.
+          {t("Results for this visit aren't downloadable yet. Once")} {booking.clinic_name}{' '}
+          {t('is connected to the records sync, the report and any lab files will appear here automatically. No documents are fabricated in this preview.')}
         </div>
       )}
     </div>

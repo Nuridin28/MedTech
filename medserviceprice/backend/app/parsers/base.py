@@ -32,6 +32,9 @@ class RawClinic:
     source_url: str | None = None
     lat: float | None = None
     lng: float | None = None
+    rating: float | None = None          # 0..5 scale (e.g. doq feedback_score / 2)
+    reviews_count: int = 0
+    has_online_booking: bool = False
 
 
 @dataclass

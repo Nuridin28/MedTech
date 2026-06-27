@@ -9,7 +9,7 @@ export type City = 'Almaty' | 'Astana' | 'Shymkent' | 'Karaganda' | 'Aktobe' | '
 
 export type SearchMode = 'lexical' | 'semantic' | 'hybrid'
 
-export type SortOrder = 'price_asc' | 'price_desc' | 'updated_desc' | 'rating_desc'
+export type SortOrder = 'price_asc' | 'price_desc' | 'updated_desc' | 'rating_desc' | 'distance'
 
 /** services_catalog row (normalized service position). */
 export interface Service {
@@ -54,6 +54,8 @@ export interface Clinic {
   /** logo / accent used by the cards */
   logo_color: string
   verified: boolean
+  /** clinic accepts online booking (e.g. listed on doq.kz) */
+  has_online_booking?: boolean
 }
 
 /** A review from an official Places API (2GIS/Google). */
@@ -69,7 +71,7 @@ export interface ClinicReview {
 /** A single price offer (clinic × service × price) as returned by /api/offers. */
 export interface Offer {
   offer_id: string
-  clinic: Pick<Clinic, 'id' | 'name' | 'city' | 'address' | 'working_hours' | 'lat' | 'lng' | 'rating' | 'reviews_count' | 'logo_color' | 'verified'>
+  clinic: Pick<Clinic, 'id' | 'name' | 'city' | 'address' | 'working_hours' | 'lat' | 'lng' | 'rating' | 'reviews_count' | 'logo_color' | 'verified' | 'has_online_booking'>
   service_id: string
   service_name_norm: string
   category: ServiceCategory
@@ -104,6 +106,10 @@ export interface OffersQuery {
   price_max?: number
   max_duration_days?: number
   verified_only?: boolean
+  min_rating?: number
+  online_booking?: boolean
+  user_lat?: number
+  user_lng?: number
   sort?: SortOrder
   page?: number
   page_size?: number

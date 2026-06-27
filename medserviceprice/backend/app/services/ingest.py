@@ -55,13 +55,16 @@ def _get_or_create_clinic(db: Session, rec: RawServiceRecord, cache: dict) -> Cl
             source_url=rec.clinic.source_url,
             lat=rec.clinic.lat,
             lng=rec.clinic.lng,
+            rating=rec.clinic.rating,
+            reviews_count=rec.clinic.reviews_count or 0,
+            has_online_booking=rec.clinic.has_online_booking,
             verified=True,  # came from an official public price list / file
         )
         db.add(clinic)
         db.flush()
     else:
         # Refresh volatile metadata on re-parse so corrected source URLs / new
-        # coordinates land without wiping the DB (e.g. the doq URL-format fix).
+        # coordinates / ratings land without wiping the DB.
         if rec.clinic.source_url and clinic.source_url != rec.clinic.source_url:
             clinic.source_url = rec.clinic.source_url
         if clinic.lat is None and rec.clinic.lat is not None:
@@ -70,6 +73,11 @@ def _get_or_create_clinic(db: Session, rec: RawServiceRecord, cache: dict) -> Cl
             clinic.lng = rec.clinic.lng
         if not clinic.address and rec.clinic.address:
             clinic.address = rec.clinic.address
+        if rec.clinic.rating is not None:
+            clinic.rating = rec.clinic.rating
+            clinic.reviews_count = rec.clinic.reviews_count or clinic.reviews_count
+        if rec.clinic.has_online_booking:
+            clinic.has_online_booking = True
     cache[key] = clinic
     return clinic
 

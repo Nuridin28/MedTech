@@ -7,6 +7,7 @@ import { MapView } from '@/components/MapView'
 import { cn, formatPrice, twoGisRouteUrl } from '@/lib/utils'
 import { useClinic } from '@/hooks/queries'
 import { activityStore, useActivity } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 import type { ClinicDetail } from '@/api/types'
 
 type ClinicService = ClinicDetail['services'][number]
@@ -38,6 +39,7 @@ function durationLabel(days: number | null): string {
 
 export function ClinicProfilePage() {
   const { clinicId } = useParams()
+  const { t } = useI18n()
   const { data: clinic, isLoading, isError } = useClinic(clinicId)
   const activity = useActivity()
   const [filter, setFilter] = useState('')
@@ -80,11 +82,11 @@ export function ClinicProfilePage() {
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant">
           <EmptyState
             icon="error"
-            title="Clinic not found"
-            description="We couldn't load this clinic. It may have been removed or the link is incorrect."
+            title={t('Clinic not found')}
+            description={t("We couldn't load this clinic. It may have been removed or the link is incorrect.")}
             action={
               <Link to="/search">
-                <Button variant="primary">Back to search</Button>
+                <Button variant="primary">{t('Back to search')}</Button>
               </Link>
             }
           />
@@ -134,7 +136,7 @@ export function ClinicProfilePage() {
                 </h1>
                 {clinic.verified && (
                   <Badge tone="success">
-                    <Icon name="verified" className="text-[16px]" filled /> Verified
+                    <Icon name="verified" className="text-[16px]" filled /> {t('Verified')}
                   </Badge>
                 )}
               </div>
@@ -172,7 +174,7 @@ export function ClinicProfilePage() {
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-primary font-label-bold hover:underline"
                   >
-                    <Icon name="open_in_new" className="text-[18px]" /> Visit source
+                    <Icon name="open_in_new" className="text-[18px]" /> {t('Visit source')}
                   </Link>
                 )}
                 {clinic.socials?.map((url) => (
@@ -181,7 +183,7 @@ export function ClinicProfilePage() {
                     href={url}
                     target="_blank"
                     rel="noreferrer"
-                    aria-label="Social link"
+                    aria-label={t('Social link')}
                     className="text-on-surface-variant hover:text-primary transition-colors"
                   >
                     <Icon name="public" className="text-[20px]" />
@@ -198,7 +200,7 @@ export function ClinicProfilePage() {
                 className="flex items-center gap-2"
               >
                 <Icon name={fav ? 'favorite' : 'favorite_border'} filled={fav} />
-                {fav ? 'Saved' : 'Save clinic'}
+                {fav ? t('Saved') : t('Save clinic')}
               </Button>
             </div>
           </div>
@@ -208,7 +210,7 @@ export function ClinicProfilePage() {
       {/* Ratings & Reviews (from official Places API; off until a key is set) */}
       <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-headline-md text-headline-md text-text-main">Ratings &amp; Reviews</h2>
+          <h2 className="font-headline-md text-headline-md text-text-main">{t('Ratings & Reviews')}</h2>
           {clinic.rating != null && <Rating value={clinic.rating} count={clinic.reviews_count} />}
         </div>
         {clinic.reviews && clinic.reviews.length > 0 ? (
@@ -216,7 +218,7 @@ export function ClinicProfilePage() {
             {clinic.reviews.map((r, i) => (
               <li key={i} className="border-b border-outline-variant/60 pb-4 last:border-0 last:pb-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-label-bold text-on-surface">{r.author_alias ?? 'Anonymous'}</span>
+                  <span className="font-label-bold text-on-surface">{r.author_alias ?? t('Anonymous')}</span>
                   {r.rating != null && <Rating value={r.rating} />}
                   <Badge tone="neutral" className="ml-auto">{r.source}</Badge>
                 </div>
@@ -228,8 +230,9 @@ export function ClinicProfilePage() {
           <div className="flex items-start gap-3 text-text-subtle bg-surface-container-low rounded-lg p-4">
             <Icon name="reviews" className="text-primary text-[22px] mt-0.5" />
             <p className="text-body-sm">
-              Ratings &amp; reviews are sourced from an official Places API (2GIS/Google) and appear
-              here once a provider key is configured. We don't scrape review platforms.
+              {t(
+                "Ratings & reviews are sourced from an official Places API (2GIS/Google) and appear here once a provider key is configured. We don't scrape review platforms.",
+              )}
             </p>
           </div>
         )}
@@ -243,18 +246,18 @@ export function ClinicProfilePage() {
             <div className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h2 className="font-headline-md text-headline-md text-text-main">
-                  Services &amp; Prices
+                  {t('Services & Prices')}
                 </h2>
                 <div className="relative w-full sm:w-64">
                   <label htmlFor="service-filter" className="sr-only">
-                    Search service
+                    {t('Search service')}
                   </label>
                   <input
                     id="service-filter"
                     type="text"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Search service..."
+                    placeholder={t('Search service...')}
                     className="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-body-sm focus:ring-2 focus:ring-secondary outline-none"
                   />
                   <Icon
@@ -267,11 +270,11 @@ export function ClinicProfilePage() {
               {grouped.length === 0 ? (
                 <EmptyState
                   icon="search_off"
-                  title="No services match your search"
+                  title={t('No services match your search')}
                   description={
                     totalServices > 0
-                      ? 'Try a different service name.'
-                      : 'This clinic has no listed services yet.'
+                      ? t('Try a different service name.')
+                      : t('This clinic has no listed services yet.')
                   }
                 />
               ) : (
@@ -320,7 +323,7 @@ export function ClinicProfilePage() {
 
               {totalServices > 0 && (
                 <p className="mt-8 text-center text-text-subtle text-body-sm">
-                  Showing {visibleCount} of {totalServices} services
+                  {t('Showing')} {visibleCount} {t('of')} {totalServices} {t('services')}
                 </p>
               )}
             </div>
@@ -365,7 +368,7 @@ export function ClinicProfilePage() {
                     >
                       {clinic.phone}
                     </a>
-                    <div className="text-xs text-text-subtle">Reception</div>
+                    <div className="text-xs text-text-subtle">{t('Reception')}</div>
                   </div>
                 </div>
                 <a
@@ -383,7 +386,7 @@ export function ClinicProfilePage() {
                 </a>
                 <hr className="border-outline-variant" />
                 <div className="flex justify-between items-center">
-                  <span className="font-label-bold text-on-surface">Working hours</span>
+                  <span className="font-label-bold text-on-surface">{t('Working hours')}</span>
                   <Icon name="info" className="text-text-subtle text-[18px]" />
                 </div>
                 <p className="text-body-sm text-text-subtle">{clinic.working_hours}</p>
@@ -399,7 +402,7 @@ export function ClinicProfilePage() {
                       'hover:bg-surface-container-low transition-colors',
                     )}
                   >
-                    <Icon name="open_in_new" className="text-[18px]" /> Visit source
+                    <Icon name="open_in_new" className="text-[18px]" /> {t('Visit source')}
                   </Link>
                 )}
               </div>

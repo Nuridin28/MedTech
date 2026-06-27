@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, EmptyState } from '@/components/ui'
 import { cn, formatPrice, formatDate } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { activityStore, useActivity } from '@/lib/store'
 import type { BookingDraft } from '@/lib/store'
 import type { AppointmentStatus, ServiceCategory } from '@/api/types'
@@ -62,6 +63,7 @@ function sortBookings(list: BookingDraft[]): BookingDraft[] {
 }
 
 function AppointmentRow({ b }: { b: BookingDraft }) {
+  const { t } = useI18n()
   const dimmed = b.status !== 'upcoming'
   const cancelled = b.status === 'cancelled'
   return (
@@ -88,7 +90,7 @@ function AppointmentRow({ b }: { b: BookingDraft }) {
             <p className={cn('font-bold text-text-main', cancelled && 'line-through')}>
               {b.service_name}
             </p>
-            <p className="text-xs text-text-subtle">{CATEGORY_LABEL[b.category]}</p>
+            <p className="text-xs text-text-subtle">{t(CATEGORY_LABEL[b.category])}</p>
           </div>
         </div>
       </td>
@@ -117,7 +119,7 @@ function AppointmentRow({ b }: { b: BookingDraft }) {
         </span>
       </td>
       <td className="px-6 py-5">
-        <Badge tone={STATUS_TONE[b.status]}>{STATUS_LABEL[b.status]}</Badge>
+        <Badge tone={STATUS_TONE[b.status]}>{t(STATUS_LABEL[b.status])}</Badge>
       </td>
       <td className="px-6 py-5 text-right">
         {b.status === 'upcoming' ? (
@@ -127,7 +129,7 @@ function AppointmentRow({ b }: { b: BookingDraft }) {
               onClick={() => activityStore.cancelBooking(b.id)}
               className="text-error hover:underline font-bold text-sm rounded outline-none focus-visible:ring-2 focus-visible:ring-error"
             >
-              Cancel
+              {t('Cancel')}
             </button>
           </div>
         ) : (
@@ -139,6 +141,7 @@ function AppointmentRow({ b }: { b: BookingDraft }) {
 }
 
 export function AppointmentsPage() {
+  const { t } = useI18n()
   const { bookings } = useActivity()
   const [tab, setTab] = useState<Tab>('upcoming')
 
@@ -163,9 +166,9 @@ export function AppointmentsPage() {
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-headline-lg text-headline-lg text-text-main">My Appointments</h1>
+          <h1 className="font-headline-lg text-headline-lg text-text-main">{t('My Appointments')}</h1>
           <p className="text-text-subtle font-body-md">
-            Manage your clinical visits and medical history
+            {t('Manage your clinical visits and medical history')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -174,7 +177,7 @@ export function AppointmentsPage() {
               <Icon name="event_available" />
             </div>
             <div>
-              <p className="text-[12px] text-text-subtle leading-none">Upcoming</p>
+              <p className="text-[12px] text-text-subtle leading-none">{t('Upcoming')}</p>
               <p className="font-bold text-lg">{counts.upcoming}</p>
             </div>
           </div>
@@ -183,7 +186,7 @@ export function AppointmentsPage() {
               <Icon name="history" />
             </div>
             <div>
-              <p className="text-[12px] text-text-subtle leading-none">Total</p>
+              <p className="text-[12px] text-text-subtle leading-none">{t('Total')}</p>
               <p className="font-bold text-lg">{counts.all}</p>
             </div>
           </div>
@@ -194,11 +197,11 @@ export function AppointmentsPage() {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm">
           <EmptyState
             icon="event_busy"
-            title="No appointments yet"
-            description="When you book a service through the app, it will show up here so you can manage and track your clinical visits."
+            title={t('No appointments yet')}
+            description={t('When you book a service through the app, it will show up here so you can manage and track your clinical visits.')}
             action={
               <Link to="/search">
-                <Button>Find a price &amp; book</Button>
+                <Button>{t('Find a price & book')}</Button>
               </Link>
             }
           />
@@ -211,15 +214,15 @@ export function AppointmentsPage() {
             aria-label="Filter appointments by status"
             className="bg-surface-container-lowest border border-outline-variant rounded-xl p-2 flex flex-wrap items-center gap-2 shadow-sm"
           >
-            {TABS.map((t) => {
-              const active = tab === t.id
+            {TABS.map((tabItem) => {
+              const active = tab === tabItem.id
               return (
                 <button
-                  key={t.id}
+                  key={tabItem.id}
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setTab(t.id)}
+                  onClick={() => setTab(tabItem.id)}
                   className={cn(
                     'px-4 py-2 rounded-lg font-body-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary',
                     active
@@ -227,14 +230,14 @@ export function AppointmentsPage() {
                       : 'text-text-subtle hover:bg-surface-container-low',
                   )}
                 >
-                  {t.label}
+                  {t(tabItem.label)}
                   <span
                     className={cn(
                       'ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold',
                       active ? 'bg-on-secondary-container/15' : 'bg-surface-container-high',
                     )}
                   >
-                    {counts[t.id]}
+                    {counts[tabItem.id]}
                   </span>
                 </button>
               )
@@ -248,22 +251,22 @@ export function AppointmentsPage() {
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider">
-                      Service Name
+                      {t('Service Name')}
                     </th>
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider">
-                      Clinic
+                      {t('Clinic')}
                     </th>
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider">
-                      Date &amp; Time
+                      {t('Date & Time')}
                     </th>
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider">
-                      Price
+                      {t('Price')}
                     </th>
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider">
-                      Status
+                      {t('Status')}
                     </th>
                     <th className="px-6 py-4 font-label-bold text-label-bold text-text-subtle uppercase tracking-wider text-right">
-                      Actions
+                      {t('Actions')}
                     </th>
                   </tr>
                 </thead>
@@ -283,15 +286,16 @@ export function AppointmentsPage() {
                   <Icon name="event_busy" className="text-2xl text-outline" />
                 </div>
                 <p className="text-text-subtle font-body-sm">
-                  No {tab === 'all' ? '' : `${TABS.find((t) => t.id === tab)?.label.toLowerCase()} `}
-                  appointments in this view.
+                  {t('No')} {tab === 'all' ? '' : `${t(TABS.find((item) => item.id === tab)?.label ?? '').toLowerCase()} `}
+                  {t('appointments in this view.')}
                 </p>
               </div>
             )}
 
             <div className="px-6 py-4 bg-surface-container-low flex justify-between items-center border-t border-outline-variant">
               <span className="text-body-sm text-text-subtle">
-                Showing {visible.length} of {counts.all} appointment{counts.all === 1 ? '' : 's'}
+                {t('Showing')} {visible.length} {t('of')} {counts.all}{' '}
+                {counts.all === 1 ? t('appointment') : t('appointments')}
               </span>
             </div>
           </div>

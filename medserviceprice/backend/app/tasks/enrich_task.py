@@ -9,6 +9,7 @@ Two layers, both safe:
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -91,6 +92,7 @@ def enrich_clinics(only_missing: bool = True) -> dict:
                         ph = places.fetch_photo(c.name, c.city)
                         if ph:
                             c.photo_url = ph
+                    time.sleep(0.3)  # spread calls to respect per-minute API quotas
                     if info:
                         c.rating = info.rating if info.rating is not None else c.rating
                         c.reviews_count = info.reviews_count or c.reviews_count

@@ -34,6 +34,7 @@ class ClinicMini(BaseModel):
     photo_url: str | None = None
     logo_color: str = "#0052cc"
     verified: bool = False
+    has_online_booking: bool = False
 
 
 class ClinicReviewOut(BaseModel):
@@ -96,6 +97,7 @@ class ClinicDetail(BaseModel):
     socials: list[str] = []
     logo_color: str = "#0052cc"
     verified: bool = False
+    has_online_booking: bool = False
     services: list[ClinicServiceLine]
     reviews: list[ClinicReviewOut] = []
 

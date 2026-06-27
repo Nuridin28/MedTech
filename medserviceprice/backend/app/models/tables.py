@@ -64,6 +64,8 @@ class Clinic(Base):
     rating: Mapped[float | None] = mapped_column(Float)
     reviews_count: Mapped[int] = mapped_column(Integer, default=0)
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    # True when the clinic accepts online booking (e.g. it's listed on doq.kz).
+    has_online_booking: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # Enrichment (clinic's own structured data + official Places API)
     photo_url: Mapped[str | None] = mapped_column(Text)
     socials: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
