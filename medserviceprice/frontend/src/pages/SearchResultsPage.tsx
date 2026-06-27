@@ -613,6 +613,17 @@ export function SearchResultsPage() {
                             <Icon name="directions" className="text-[14px]" />
                             2GIS
                           </a>
+                          {o.clinic.has_online_booking && o.source_url && (
+                            <a
+                              href={o.source_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-success-green font-label-bold text-[13px] hover:underline"
+                            >
+                              <Icon name="event_available" className="text-[14px]" />
+                              Записаться онлайн
+                            </a>
+                          )}
                         </div>
                       </div>
                     </div>

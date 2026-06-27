@@ -1,0 +1,13 @@
+{
+  "name": "MedServicePrice.kz — цены на медуслуги",
+  "short_name": "MedServicePrice",
+  "description": "Сравнение цен на медицинские услуги в Казахстане",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0052cc",
+  "lang": "ru",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

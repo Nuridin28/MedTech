@@ -371,6 +371,16 @@ export function ClinicProfilePage() {
                     <div className="text-xs text-text-subtle">{t('Reception')}</div>
                   </div>
                 </div>
+                {clinic.has_online_booking && clinic.source_url && (
+                  <a
+                    href={clinic.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-lg bg-success-green text-white font-label-bold hover:opacity-90 transition-colors"
+                  >
+                    <Icon name="event_available" className="text-[18px]" /> Записаться онлайн
+                  </a>
+                )}
                 <a
                   href={twoGisRouteUrl({
                     name: clinic.name,
