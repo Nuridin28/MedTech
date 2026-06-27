@@ -50,6 +50,12 @@ celery_app.conf.beat_schedule["nightly-geocode"] = {
     "schedule": crontab(hour=4, minute=0),
 }
 
+# Enrich clinics: own-site metadata/photo + official Places ratings/reviews, nightly.
+celery_app.conf.beat_schedule["nightly-enrich"] = {
+    "task": "app.tasks.enrich_task.enrich_clinics",
+    "schedule": crontab(hour=4, minute=30),
+}
+
 # Check tracked prices and notify subscribers on a drop (TZ §3.4), twice daily.
 celery_app.conf.beat_schedule["price-drop-alerts"] = {
     "task": "app.tasks.subscriptions_task.notify_price_drops",

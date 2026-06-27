@@ -31,8 +31,18 @@ class ClinicMini(BaseModel):
     lng: float | None = None
     rating: float | None = None
     reviews_count: int = 0
+    photo_url: str | None = None
     logo_color: str = "#0052cc"
     verified: bool = False
+
+
+class ClinicReviewOut(BaseModel):
+    source: str
+    author_alias: str | None = None
+    rating: float | None = None
+    text: str | None = None
+    published_at: datetime | None = None
+    url: str | None = None
 
 
 class Offer(BaseModel):
@@ -82,9 +92,12 @@ class ClinicDetail(BaseModel):
     source_url: str | None = None
     rating: float | None = None
     reviews_count: int = 0
+    photo_url: str | None = None
+    socials: list[str] = []
     logo_color: str = "#0052cc"
     verified: bool = False
     services: list[ClinicServiceLine]
+    reviews: list[ClinicReviewOut] = []
 
 
 class PriceHistoryPoint(BaseModel):

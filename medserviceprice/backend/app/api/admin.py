@@ -98,6 +98,16 @@ async def run_geocode() -> dict:
     return {"queued": True, "task_id": str(res.id)}
 
 
+@router.post("/enrich/run")
+async def run_enrich(only_missing: bool = True) -> dict:
+    """Enrich clinics: metadata/photo from their own JSON-LD, plus ratings/reviews
+    from the official Places API when configured (off by default)."""
+    from app.tasks.enrich_task import enrich_clinics
+
+    res = enrich_clinics.delay(only_missing)
+    return {"queued": True, "task_id": str(res.id)}
+
+
 @router.get("/parse/logs", response_model=list[ParseLogOut])
 async def parse_logs(limit: int = 50, db: AsyncSession = Depends(get_db)) -> list[ParseLogOut]:
     rows = (

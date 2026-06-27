@@ -64,11 +64,20 @@ class Clinic(Base):
     rating: Mapped[float | None] = mapped_column(Float)
     reviews_count: Mapped[int] = mapped_column(Integer, default=0)
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Enrichment (clinic's own structured data + official Places API)
+    photo_url: Mapped[str | None] = mapped_column(Text)
+    socials: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    place_id: Mapped[str | None] = mapped_column(Text)          # 2GIS/Google place ref
+    place_source: Mapped[str | None] = mapped_column(Text)      # '2gis' | 'google'
+    place_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     offers: Mapped[list["ServiceOffer"]] = relationship(back_populates="clinic")
+    reviews: Mapped[list["ClinicReview"]] = relationship(
+        back_populates="clinic", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         UniqueConstraint("name", "city", name="uq_clinic_name_city"),
@@ -192,4 +201,34 @@ class Subscription(Base):
     last_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ClinicReview(Base):
+    """Reviews fetched from an official Places API (2GIS/Google), not scraped.
+
+    `author_alias` stores only the public display name the platform returns; we
+    keep a stable `external_id` to dedup on re-sync. No other PII is collected.
+    """
+
+    __tablename__ = "clinic_reviews"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    clinic_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clinics.id"), nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)            # '2gis' | 'google'
+    external_id: Mapped[str] = mapped_column(Text, nullable=False)       # platform review id
+    author_alias: Mapped[str | None] = mapped_column(Text)
+    rating: Mapped[float | None] = mapped_column(Float)
+    text: Mapped[str | None] = mapped_column(Text)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    url: Mapped[str | None] = mapped_column(Text)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    clinic: Mapped["Clinic"] = relationship(back_populates="reviews")
+
+    __table_args__ = (
+        UniqueConstraint("source", "external_id", name="uq_review_source_extid"),
+        Index("idx_reviews_clinic", "clinic_id"),
     )

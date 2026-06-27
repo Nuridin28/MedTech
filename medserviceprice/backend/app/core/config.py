@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     geocode_enabled: bool = True
     geocode_url: str = "https://nominatim.openstreetmap.org/search"
 
+    # --- Places API (ratings/reviews/photos) — official, OFF by default ---
+    # Reviews/ratings/photos must come from an official API, never scraped from
+    # maps (ToS) — see clinic_enrich.py for the safe own-site enrichment path.
+    places_provider: str = Field(default="none")  # 'none' | '2gis' | 'google'
+    twogis_api_key: str = ""
+    google_places_key: str = ""
+    places_reviews_limit: int = 5
+
     # --- Email notifications (TZ §3.4) — optional; logs if SMTP_HOST unset ---
     smtp_host: str = ""
     smtp_port: int = 587

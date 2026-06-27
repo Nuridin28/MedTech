@@ -13,6 +13,7 @@ from app.models import Clinic, ServiceCatalog, ServiceOffer
 from app.schemas import (
     ClinicDetail,
     ClinicMini,
+    ClinicReviewOut,
     ClinicServiceLine,
     Offer,
     OffersResponse,
@@ -47,6 +48,7 @@ def _clinic_mini(c: Clinic) -> ClinicMini:
         lng=c.lng,
         rating=c.rating,
         reviews_count=c.reviews_count or 0,
+        photo_url=c.photo_url,
         logo_color=color_for(c.name),
         verified=bool(c.verified),
     )
@@ -147,7 +149,10 @@ async def get_clinic_detail(db: AsyncSession, clinic_id: uuid.UUID) -> ClinicDet
         await db.execute(
             select(Clinic)
             .where(Clinic.id == clinic_id)
-            .options(selectinload(Clinic.offers).selectinload(ServiceOffer.service))
+            .options(
+                selectinload(Clinic.offers).selectinload(ServiceOffer.service),
+                selectinload(Clinic.reviews),
+            )
         )
     ).scalar_one_or_none()
     if clinic is None:
@@ -186,7 +191,16 @@ async def get_clinic_detail(db: AsyncSession, clinic_id: uuid.UUID) -> ClinicDet
         source_url=clinic.source_url,
         rating=clinic.rating,
         reviews_count=clinic.reviews_count or 0,
+        photo_url=clinic.photo_url,
+        socials=list(clinic.socials or []),
         logo_color=color_for(clinic.name),
         verified=bool(clinic.verified),
         services=lines,
+        reviews=[
+            ClinicReviewOut(
+                source=r.source, author_alias=r.author_alias, rating=r.rating,
+                text=r.text, published_at=r.published_at, url=r.url,
+            )
+            for r in sorted(clinic.reviews, key=lambda x: x.fetched_at, reverse=True)
+        ],
     )
