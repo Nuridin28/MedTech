@@ -106,14 +106,23 @@ export function ClinicProfilePage() {
         className="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 mb-8"
       >
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Logo / avatar */}
+          {/* Photo / logo avatar */}
           <div className="flex-shrink-0 flex items-center gap-4 md:flex-col md:items-start">
-            <div
-              className="w-20 h-20 rounded-xl flex items-center justify-center border border-outline-variant text-on-primary shrink-0"
-              style={{ backgroundColor: clinic.logo_color }}
-            >
-              <Icon name="medical_services" className="text-4xl" />
-            </div>
+            {clinic.photo_url ? (
+              <img
+                src={clinic.photo_url}
+                alt={`${clinic.name} photo`}
+                className="w-28 h-28 md:w-32 md:h-32 rounded-xl object-cover border border-outline-variant shrink-0"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-xl flex items-center justify-center border border-outline-variant text-on-primary shrink-0"
+                style={{ backgroundColor: clinic.logo_color }}
+              >
+                <Icon name="medical_services" className="text-4xl" />
+              </div>
+            )}
           </div>
 
           {/* Basic info */}
@@ -155,16 +164,30 @@ export function ClinicProfilePage() {
                 </span>
               </div>
 
-              {clinic.source_url && (
-                <Link
-                  to={clinic.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-primary font-label-bold hover:underline"
-                >
-                  <Icon name="open_in_new" className="text-[18px]" /> Visit source
-                </Link>
-              )}
+              <div className="flex flex-wrap items-center gap-4">
+                {clinic.source_url && (
+                  <Link
+                    to={clinic.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-primary font-label-bold hover:underline"
+                  >
+                    <Icon name="open_in_new" className="text-[18px]" /> Visit source
+                  </Link>
+                )}
+                {clinic.socials?.map((url) => (
+                  <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Social link"
+                    className="text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    <Icon name="public" className="text-[20px]" />
+                  </a>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6">
@@ -181,6 +204,36 @@ export function ClinicProfilePage() {
           </div>
         </div>
       </motion.header>
+
+      {/* Ratings & Reviews (from official Places API; off until a key is set) */}
+      <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-headline-md text-headline-md text-text-main">Ratings &amp; Reviews</h2>
+          {clinic.rating != null && <Rating value={clinic.rating} count={clinic.reviews_count} />}
+        </div>
+        {clinic.reviews && clinic.reviews.length > 0 ? (
+          <ul className="space-y-4">
+            {clinic.reviews.map((r, i) => (
+              <li key={i} className="border-b border-outline-variant/60 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-label-bold text-on-surface">{r.author_alias ?? 'Anonymous'}</span>
+                  {r.rating != null && <Rating value={r.rating} />}
+                  <Badge tone="neutral" className="ml-auto">{r.source}</Badge>
+                </div>
+                {r.text && <p className="text-body-sm text-text-subtle">{r.text}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex items-start gap-3 text-text-subtle bg-surface-container-low rounded-lg p-4">
+            <Icon name="reviews" className="text-primary text-[22px] mt-0.5" />
+            <p className="text-body-sm">
+              Ratings &amp; reviews are sourced from an official Places API (2GIS/Google) and appear
+              here once a provider key is configured. We don't scrape review platforms.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* Main Content & Sidebar */}
       <div className="flex flex-col lg:flex-row gap-gutter">

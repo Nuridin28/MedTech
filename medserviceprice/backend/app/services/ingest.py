@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timezone
 
 import redis
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -99,6 +99,9 @@ def ingest_records(
     clinic_cache: dict = {}
     inserted = updated = unmatched_count = 0
     status = "success"
+    # offer_hashes actually seen this run, per clinic — used to deactivate offers
+    # that disappeared from the source (e.g. old prices, removed services).
+    seen_by_clinic: dict = {}
 
     for rec in records:
         try:
@@ -130,8 +133,8 @@ def ingest_records(
             # 2) clinic upsert
             clinic = _get_or_create_clinic(db, rec, clinic_cache)
 
-            # 3) normalize -> catalog
-            match = normalizer.match(rec.service_name_raw)
+            # 3) normalize -> catalog (use the cleaned match name when provided)
+            match = normalizer.match(rec.match_name or rec.service_name_raw)
             service_id = match.service_id if match.matched else None
             if not match.matched:
                 _queue_unmatched(db, rec, source_key, match.service_id, match.score)
@@ -139,6 +142,7 @@ def ingest_records(
 
             # 4) offer upsert (dedup on offer_hash) — TZ §5.3
             ohash = rec.offer_hash()
+            seen_by_clinic.setdefault(clinic.id, set()).add(ohash)
             offer = db.execute(
                 select(ServiceOffer).where(
                     ServiceOffer.clinic_id == clinic.id, ServiceOffer.offer_hash == ohash
@@ -194,10 +198,29 @@ def ingest_records(
             logger.warning("[%s] row failed: %s", source_key, row_exc)
             status = "partial"
 
+    # Deactivate offers of the clinics we just parsed that did NOT appear this run
+    # (stale prices, withdrawn services) — only when the run actually saw data, so a
+    # blocked/empty fetch never wipes a clinic.
+    deactivated = 0
+    for clinic_id, hashes in seen_by_clinic.items():
+        if not hashes:
+            continue
+        res = db.execute(
+            update(ServiceOffer)
+            .where(
+                ServiceOffer.clinic_id == clinic_id,
+                ServiceOffer.is_active.is_(True),
+                ServiceOffer.offer_hash.notin_(hashes),
+            )
+            .values(is_active=False)
+        )
+        deactivated += res.rowcount or 0
+
     return {
         "inserted": inserted,
         "updated": updated,
         "unmatched": unmatched_count,
+        "deactivated": deactivated,
         "status": status,
     }
 

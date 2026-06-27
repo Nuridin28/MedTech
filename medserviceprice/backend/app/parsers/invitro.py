@@ -85,6 +85,7 @@ class InvitroParser(BaseParser):
                     RawServiceRecord(
                         clinic=clinic,
                         service_name_raw=name,
+                        match_name=self._clean_name(name),
                         price=price,
                         currency="KZT",
                         duration_days=duration,
@@ -114,3 +115,17 @@ class InvitroParser(BaseParser):
             return None
         digits = re.sub(r"\D", "", m.group())
         return float(digits) if digits else None
+
+    @staticmethod
+    def _clean_name(name: str) -> str:
+        """Strip Invitro's verbose tails so fuzzy matching to the catalog works:
+        - drop parenthetical groups that contain Latin letters (English translations),
+        - drop a leading generic "Анализ крови./мочи." prefix,
+        - collapse whitespace.
+        e.g. 'Анализ крови. Общий анализ крови (без ...) (Complete Blood Count, CBC)'
+             -> 'Общий анализ крови'
+        """
+        n = re.sub(r"\([^)]*[A-Za-z][^)]*\)", " ", name)          # english parentheticals
+        n = re.sub(r"^\s*Анализ\s+(?:крови|мочи|кала)\.\s*", "", n, flags=re.IGNORECASE)
+        n = re.sub(r"\s+", " ", n).strip(" .,;")
+        return n or name

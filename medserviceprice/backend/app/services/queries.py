@@ -108,6 +108,43 @@ async def get_offers(
     if verified_only:
         base = base.where(Clinic.verified.is_(True))
 
+    # When comparing a single service, collapse to ONE row per clinic (the cheapest)
+    # so the comparison stays clean even if normalization merged a couple of raw
+    # variants. (Small N per service — safe to do in Python.)
+    if service_id is not None:
+        all_rows = (await db.execute(base)).scalars().all()
+        best: dict = {}
+        for o in all_rows:
+            cur = best.get(o.clinic_id)
+            if cur is None or float(o.price_kzt) < float(cur.price_kzt):
+                best[o.clinic_id] = o
+        collapsed = list(best.values())
+        prices = [float(o.price_kzt) for o in collapsed]
+        lowest = min(prices) if prices else None
+        key_map = {
+            "price_desc": (lambda o: float(o.price_kzt), True),
+            "updated_desc": (lambda o: o.parsed_at, True),
+            "rating_desc": (lambda o: (o.clinic.rating or 0.0), True),
+            "price_asc": (lambda o: float(o.price_kzt), False),
+        }
+        keyf, rev = key_map.get(sort, key_map["price_asc"])
+        collapsed.sort(key=keyf, reverse=rev)
+        start = (page - 1) * page_size
+        page_rows = collapsed[start : start + page_size]
+        items = [
+            _to_offer(o, o.service.name_norm if o.service else o.service_name_raw, lowest)
+            for o in page_rows
+        ]
+        return OffersResponse(
+            items=items,
+            total=len(collapsed),
+            page=page,
+            page_size=page_size,
+            price_min=min(prices) if prices else 0,
+            price_max=max(prices) if prices else 0,
+            price_avg=round(sum(prices) / len(prices), 2) if prices else 0,
+        )
+
     # aggregate stats over the full filtered set
     stats_q = base.with_only_columns(
         func.count(ServiceOffer.id),

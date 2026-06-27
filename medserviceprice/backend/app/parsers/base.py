@@ -46,6 +46,9 @@ class RawServiceRecord:
     category_hint: str | None = None
     source_url: str | None = None
     extra: dict = field(default_factory=dict)
+    #: optional cleaned name used for catalog matching only; service_name_raw stays
+    #: verbatim for the raw layer / dedup / display fallback.
+    match_name: str | None = None
 
     def content_hash(self) -> str:
         basis = f"{self.clinic.name}|{self.service_name_raw}|{self.price}|{self.currency}"

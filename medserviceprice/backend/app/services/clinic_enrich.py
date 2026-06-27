@@ -113,7 +113,7 @@ def parse_meta(html: str, base_url: str) -> ClinicMeta:
             img = img.get("url")
         if isinstance(img, list):
             img = next((x.get("url") if isinstance(x, dict) else x for x in img), None)
-        if isinstance(img, str) and img.startswith("http") and not meta.photo_url:
+        if isinstance(img, str) and _valid_photo(img) and not meta.photo_url:
             meta.photo_url = img
         rating = it.get("aggregateRating") or {}
         if isinstance(rating, dict) and rating.get("ratingValue") and meta.rating is None:
@@ -133,9 +133,18 @@ def parse_meta(html: str, base_url: str) -> ClinicMeta:
     if not meta.photo_url:
         og = soup.find("meta", attrs={"property": "og:image"})
         url = og.get("content") if og else None
-        if isinstance(url, str) and re.match(r"^https?://.+\.(jpg|jpeg|png|webp)", url, re.I):
+        if isinstance(url, str) and _valid_photo(url):
             meta.photo_url = url
     return meta
+
+
+# Require a real path segment + image extension — rejects malformed logo URLs
+# (e.g. KDL's "https://kdlolymp.kzOG__image.webp") and template/asset stubs.
+_PHOTO_RE = re.compile(r"^https?://[^/\s]+/[^\s]+\.(jpg|jpeg|png|webp)(\?.*)?$", re.I)
+
+
+def _valid_photo(url: str) -> bool:
+    return bool(_PHOTO_RE.match(url.strip())) and "/local/templ" not in url and "logo" not in url.lower()
 
 
 def enrich_from_url(url: str) -> ClinicMeta:

@@ -47,9 +47,23 @@ export interface Clinic {
   /** clinic price lists don't publish ratings → may be null */
   rating: number | null
   reviews_count: number
+  /** primary photo (from JSON-LD/og or official Places API) — may be null */
+  photo_url?: string | null
+  /** social links from the clinic's structured data */
+  socials?: string[]
   /** logo / accent used by the cards */
   logo_color: string
   verified: boolean
+}
+
+/** A review from an official Places API (2GIS/Google). */
+export interface ClinicReview {
+  source: string
+  author_alias?: string | null
+  rating?: number | null
+  text?: string | null
+  published_at?: string | null
+  url?: string | null
 }
 
 /** A single price offer (clinic × service × price) as returned by /api/offers. */
@@ -119,6 +133,7 @@ export interface ClinicDetail extends Clinic {
     duration_days: number | null
     freshness_days: number
   }>
+  reviews?: ClinicReview[]
 }
 
 /* ---- Account-area view models (dashboard / appointments / favorites / records) ---- */
