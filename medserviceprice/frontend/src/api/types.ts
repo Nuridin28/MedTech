@@ -224,3 +224,27 @@ export interface ImportResponse {
   task_id: string
   filename: string
 }
+
+/* ---- ELK logs ---- */
+export interface LogEntry {
+  '@timestamp'?: string | null
+  level?: string | null
+  logger?: string | null
+  message?: string | null
+  source_key?: string | null
+  exception?: string | null
+}
+
+export interface LogsResponse {
+  available: boolean
+  items: LogEntry[]
+  kibana_url?: string | null
+}
+
+export interface LogsQuery {
+  level?: string
+  source?: string
+  q?: string
+  since_minutes?: number
+  limit?: number
+}

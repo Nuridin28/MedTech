@@ -2,6 +2,8 @@ import type {
   ClinicDetail,
   ClinicsMapResponse,
   ImportResponse,
+  LogsQuery,
+  LogsResponse,
   OffersQuery,
   OffersResponse,
   ParseLog,
@@ -136,6 +138,14 @@ export const adminApi = {
   },
   runGeocode(key: string): Promise<{ queued: boolean; task_id: string }> {
     return adminFetch('/geocode/run', key, { method: 'POST' })
+  },
+  logs(key: string, params: LogsQuery = {}): Promise<LogsResponse> {
+    const qs = new URLSearchParams(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => [k, String(v)]),
+    ).toString()
+    return adminFetch<LogsResponse>(`/logs${qs ? `?${qs}` : ''}`, key)
   },
   uploadPriceFile(
     key: string,

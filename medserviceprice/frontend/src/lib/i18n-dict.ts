@@ -172,7 +172,6 @@ export const DICT: Record<string, Partial<Record<Lang, string>>> = {
 
   // --- Clinic / Service detail (extended) ---
   'Clinic not found': { ru: 'Клиника не найдена', kk: 'Клиника табылмады' },
-  'Save clinic': { ru: 'Сохранить клинику', kk: 'Клиниканы сақтау' },
   Reception: { ru: 'Приём', kk: 'Қабылдау' },
   'Working hours': { ru: 'Часы работы', kk: 'Жұмыс уақыты' },
   'Price History': { ru: 'История цен', kk: 'Баға тарихы' },

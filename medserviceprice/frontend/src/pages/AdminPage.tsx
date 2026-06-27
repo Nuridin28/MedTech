@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, Skeleton } from '@/components/ui'
 import { adminApi, api, ApiError } from '@/api/client'
 import { cn } from '@/lib/utils'
-import type { ParseLog, ServiceSuggestion, UnmatchedItem } from '@/api/types'
+import type { LogEntry, ParseLog, ServiceSuggestion, UnmatchedItem } from '@/api/types'
 
 const KEY_STORAGE = 'msp_admin_key'
 
@@ -152,6 +152,9 @@ export function AdminPage() {
 
           {/* Upload price file */}
           <UploadCard apiKey={key} onDone={() => refresh(key)} setMsg={setMsg} />
+
+          {/* System logs (ELK) */}
+          <LogsCard apiKey={key} />
 
           {/* Unmatched queue */}
           <section className="bg-surface-container-lowest dark:bg-surface-container border border-outline-variant rounded-xl p-5">
@@ -330,6 +333,170 @@ function UploadCard({
           </Button>
         </div>
       </form>
+    </section>
+  )
+}
+
+const LEVEL_TONE: Record<string, string> = {
+  ERROR: 'text-error',
+  CRITICAL: 'text-error',
+  WARNING: 'text-warning-orange',
+  INFO: 'text-on-surface-variant',
+  DEBUG: 'text-text-subtle',
+}
+
+function LogsCard({ apiKey }: { apiKey: string }) {
+  const [level, setLevel] = useState('')
+  const [source, setSource] = useState('')
+  const [q, setQ] = useState('')
+  const [since, setSince] = useState('60')
+  const [auto, setAuto] = useState(false)
+  const [items, setItems] = useState<LogEntry[]>([])
+  const [available, setAvailable] = useState<boolean | null>(null)
+  const [kibana, setKibana] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await adminApi.logs(apiKey, {
+        level: level || undefined,
+        source: source || undefined,
+        q: q || undefined,
+        since_minutes: Number(since),
+        limit: 200,
+      })
+      setItems(res.items)
+      setAvailable(res.available)
+      setKibana(res.kibana_url ?? null)
+    } catch {
+      setAvailable(false)
+    } finally {
+      setLoading(false)
+    }
+  }, [apiKey, level, source, q, since])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  useEffect(() => {
+    if (!auto) return
+    const id = setInterval(load, 5000)
+    return () => clearInterval(id)
+  }, [auto, load])
+
+  return (
+    <section className="bg-surface-container-lowest dark:bg-surface-container border border-outline-variant rounded-xl p-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+        <h2 className="font-headline-md text-headline-md">Логи системы (ELK)</h2>
+        <div className="flex items-center gap-3">
+          {kibana && (
+            <a
+              href={kibana}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary font-label-bold text-[13px] inline-flex items-center gap-1 hover:underline"
+            >
+              <Icon name="open_in_new" className="text-[14px]" /> Kibana
+            </a>
+          )}
+          <label className="flex items-center gap-1.5 font-label-bold text-[13px] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={auto}
+              onChange={(e) => setAuto(e.target.checked)}
+              className="rounded border-outline-variant text-primary focus:ring-secondary"
+            />
+            Авто-обновление
+          </label>
+        </div>
+      </div>
+      <p className="text-text-subtle font-body-sm mb-4">
+        Структурированные логи из Elasticsearch — парсинг источников, ошибки, фоновые задачи.
+      </p>
+
+      {/* Filters */}
+      <div className="grid sm:grid-cols-4 gap-2 mb-4">
+        <select
+          value={level}
+          onChange={(e) => setLevel(e.target.value)}
+          className="border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest text-on-surface focus:ring-secondary focus:border-secondary"
+        >
+          <option value="">Все уровни</option>
+          {['INFO', 'WARNING', 'ERROR', 'CRITICAL', 'DEBUG'].map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <input
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          placeholder="Источник (kdl, doq, invitro…)"
+          className="border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest text-on-surface focus:ring-secondary focus:border-secondary"
+        />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Поиск по тексту"
+          className="border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest text-on-surface focus:ring-secondary focus:border-secondary"
+        />
+        <select
+          value={since}
+          onChange={(e) => setSince(e.target.value)}
+          className="border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest text-on-surface focus:ring-secondary focus:border-secondary"
+        >
+          <option value="15">15 мин</option>
+          <option value="60">1 час</option>
+          <option value="360">6 часов</option>
+          <option value="1440">24 часа</option>
+          <option value="10080">7 дней</option>
+        </select>
+      </div>
+
+      {available === false ? (
+        <div className="text-text-subtle font-body-sm border border-dashed border-outline-variant rounded-lg p-4">
+          Elasticsearch недоступен. Включите ELK (`ELASTIC_ENABLED=true` + сервис `elasticsearch`
+          в docker-compose) — логи появятся здесь и в Kibana. JSON-логи при этом всё равно пишутся в stdout.
+        </div>
+      ) : loading && items.length === 0 ? (
+        <Skeleton className="h-40 w-full" />
+      ) : items.length === 0 ? (
+        <p className="text-text-subtle font-body-sm">Логов за выбранный период нет.</p>
+      ) : (
+        <div className="overflow-x-auto max-h-[480px] overflow-y-auto rounded-lg border border-outline-variant">
+          <table className="w-full text-left text-[13px] font-mono">
+            <thead className="sticky top-0 bg-surface-container">
+              <tr className="text-text-subtle">
+                <th className="p-2 whitespace-nowrap">Время</th>
+                <th className="p-2">Уровень</th>
+                <th className="p-2">Источник</th>
+                <th className="p-2">Сообщение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((l, i) => (
+                <tr key={i} className="border-t border-outline-variant align-top">
+                  <td className="p-2 whitespace-nowrap text-text-subtle">
+                    {l['@timestamp'] ? new Date(l['@timestamp']).toLocaleTimeString('ru-RU') : '—'}
+                  </td>
+                  <td className={cn('p-2 font-bold', LEVEL_TONE[l.level ?? 'INFO'] ?? 'text-on-surface')}>
+                    {l.level}
+                  </td>
+                  <td className="p-2 text-secondary">{l.source_key ?? l.logger ?? '—'}</td>
+                  <td className="p-2 text-on-surface break-all">
+                    {l.message}
+                    {l.exception && (
+                      <pre className="mt-1 text-[11px] text-error whitespace-pre-wrap">{l.exception}</pre>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   )
 }

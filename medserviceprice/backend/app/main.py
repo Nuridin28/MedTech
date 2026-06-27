@@ -15,7 +15,9 @@ from app.api.admin import router as admin_router
 from app.api.public import router as public_router
 from app.core.config import settings
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
+from app.core.logging_setup import setup_logging
+
+setup_logging()  # structured JSON logs (+ Elasticsearch shipping when enabled)
 
 # Rate limiting on public endpoints (TZ §11) — Redis-backed.
 limiter = Limiter(key_func=get_remote_address, storage_uri=settings.redis_url, default_limits=["120/minute"])

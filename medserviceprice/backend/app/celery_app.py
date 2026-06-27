@@ -5,7 +5,10 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.core.config import settings
+from app.core.logging_setup import setup_logging
 from app.parsers.registry import all_source_keys
+
+setup_logging()  # JSON logs + Elasticsearch shipping in worker/beat too
 
 celery_app = Celery(
     "medserviceprice",

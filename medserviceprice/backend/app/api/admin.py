@@ -5,7 +5,8 @@ import re
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,7 @@ from app.models import ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
 from app.parsers.registry import all_source_keys
 from app.schemas import (
     ImportResponse,
+    LogsResponse,
     ParseLogOut,
     ParseRunRequest,
     ParseRunResponse,
@@ -23,6 +25,7 @@ from app.schemas import (
     UnmatchedResolve,
 )
 from app.services.file_extract import SUPPORTED_EXTENSIONS
+from app.services.log_query import query_logs
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -106,6 +109,26 @@ async def run_enrich(only_missing: bool = True) -> dict:
 
     res = enrich_clinics.delay(only_missing)
     return {"queued": True, "task_id": str(res.id)}
+
+
+@router.get("/logs", response_model=LogsResponse)
+async def system_logs(
+    level: str | None = Query(None, pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"),
+    source: str | None = None,
+    q: str | None = None,
+    since_minutes: int = Query(60, ge=1, le=10080),
+    limit: int = Query(100, ge=1, le=500),
+) -> LogsResponse:
+    """Application logs from Elasticsearch (ELK). Falls back to available=false
+    when ES is disabled/unreachable so the UI can show a hint instead of erroring."""
+    entries, available = await run_in_threadpool(
+        query_logs, level=level, source=source, q=q, since_minutes=since_minutes, limit=limit
+    )
+    return LogsResponse(
+        available=available,
+        items=entries,
+        kibana_url=settings.kibana_url or None,
+    )
 
 
 @router.get("/parse/logs", response_model=list[ParseLogOut])

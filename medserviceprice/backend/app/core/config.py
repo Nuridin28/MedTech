@@ -76,6 +76,17 @@ class Settings(BaseSettings):
     places_budget: int = 1000        # hard lifetime ceiling on Places API calls
     places_max_per_run: int = 50     # per-run cap so you enrich in controlled batches
 
+    # --- Logging / ELK observability ---
+    # JSON logs always go to stdout (Filebeat-friendly). When ELASTIC_ENABLED is
+    # true the app ALSO ships them straight to Elasticsearch (non-blocking) so the
+    # admin Logs panel + Kibana work without extra shippers.
+    elastic_enabled: bool = Field(default=False)
+    elasticsearch_url: str = Field(default="http://elasticsearch:9200")
+    elastic_index: str = Field(default="msp-logs")
+    elastic_user: str = ""
+    elastic_password: str = ""
+    kibana_url: str = Field(default="")  # shown as a deep-link in the admin panel
+
     # --- Email notifications (TZ §3.4) — optional; logs if SMTP_HOST unset ---
     smtp_host: str = ""
     smtp_port: int = 587

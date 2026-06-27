@@ -169,6 +169,24 @@ class ImportResponse(BaseModel):
     filename: str
 
 
+# --- ELK logs ---
+class LogEntry(BaseModel):
+    timestamp: str | None = Field(default=None, alias="@timestamp")
+    level: str | None = None
+    logger: str | None = None
+    message: str | None = None
+    source_key: str | None = None
+    exception: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class LogsResponse(BaseModel):
+    available: bool
+    items: list[LogEntry] = []
+    kibana_url: str | None = None
+
+
 # --- Map (TZ §3.4) ---
 class ClinicPin(BaseModel):
     id: str
