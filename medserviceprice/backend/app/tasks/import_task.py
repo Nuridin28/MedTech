@@ -43,16 +43,23 @@ def import_file(self, file_path: str, clinic_meta: dict, source_key: str) -> dic
         error_message = str(exc)
         logger.exception("[%s] file import failed", source_key)
     finally:
+        records_count = counts.get("inserted", 0) + counts.get("updated", 0)
         db.add(
             ParseLog(
                 source_key=source_key,
                 status=status,
-                records_count=counts.get("inserted", 0) + counts.get("updated", 0),
+                records_count=records_count,
                 error_message=error_message,
                 started_at=started,
                 finished_at=datetime.now(timezone.utc),
             )
         )
+        try:
+            from app.services.alerts import evaluate_parse_outcome
+
+            evaluate_parse_outcome(db, source_key, status, records_count)
+        except Exception:
+            logger.exception("[%s] alert evaluation failed", source_key)
         db.commit()
         db.close()
 

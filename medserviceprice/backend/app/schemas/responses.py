@@ -169,6 +169,17 @@ class ImportResponse(BaseModel):
     filename: str
 
 
+# --- Operational alerts ---
+class AlertOut(BaseModel):
+    id: str
+    source_key: str
+    severity: str
+    kind: str
+    message: str
+    acknowledged: bool
+    created_at: datetime
+
+
 # --- ELK logs ---
 class LogEntry(BaseModel):
     timestamp: str | None = Field(default=None, alias="@timestamp")

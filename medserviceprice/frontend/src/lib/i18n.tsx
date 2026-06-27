@@ -46,7 +46,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => {
       const entry = DICT[key]
-      let out = lang === 'en' ? key : (entry?.[lang] ?? key)
+      let out = entry?.[lang] ?? key
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           out = out.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))

@@ -197,4 +197,133 @@ export const DICT: Record<string, Partial<Record<Lang, string>>> = {
     ru: 'Запрашиваемая страница не существует.',
     kk: 'Сұралған бет жоқ.',
   },
+
+  // --- Categories (extra forms) ---
+  'Doctor visit': { ru: 'Приём врача', kk: 'Дәрігер қабылдауы' },
+  'Doctor Visit': { ru: 'Приём врача', kk: 'Дәрігер қабылдауы' },
+  Procedure: { ru: 'Процедура', kk: 'Рәсім' },
+  Pending: { ru: 'В ожидании', kk: 'Күтілуде' },
+  Confirmed: { ru: 'Подтверждено', kk: 'Расталды' },
+  Status: { ru: 'Статус', kk: 'Күй' },
+  Total: { ru: 'Всего', kk: 'Барлығы' },
+  All: { ru: 'Все', kk: 'Барлығы' },
+  Showing: { ru: 'Показано', kk: 'Көрсетілді' },
+
+  // --- Dashboard ---
+  'Health Overview': { ru: 'Обзор здоровья', kk: 'Денсаулық шолуы' },
+  'Your clinical summary, built from your own activity.': {
+    ru: 'Ваша клиническая сводка на основе ваших действий.',
+    kk: 'Сіздің әрекеттеріңіз негізіндегі клиникалық қорытынды.',
+  },
+  'Verified Account': { ru: 'Подтверждённый аккаунт', kk: 'Расталған аккаунт' },
+  'Welcome to your dashboard': { ru: 'Добро пожаловать в кабинет', kk: 'Кабинетке қош келдіңіз' },
+  'Search for a medical service to compare prices...': {
+    ru: 'Найдите медуслугу, чтобы сравнить цены...',
+    kk: 'Бағаларды салыстыру үшін медқызметті іздеңіз...',
+  },
+  'Find a price': { ru: 'Найти цену', kk: 'Бағаны табу' },
+  'Find a Price': { ru: 'Найти цену', kk: 'Бағаны табу' },
+  'View Details': { ru: 'Подробнее', kk: 'Толығырақ' },
+  'Next Appointment': { ru: 'Ближайшая запись', kk: 'Жақын жазылу' },
+  'No appointments': { ru: 'Нет записей', kk: 'Жазылулар жоқ' },
+  "You don't have any upcoming visits booked.": {
+    ru: 'У вас нет предстоящих визитов.',
+    kk: 'Сізде алдағы визиттер жоқ.',
+  },
+  'Upcoming Spend': { ru: 'Предстоящие расходы', kk: 'Алдағы шығындар' },
+  'No upcoming costs.': { ru: 'Нет предстоящих расходов.', kk: 'Алдағы шығындар жоқ.' },
+  Across: { ru: 'По', kk: 'Бойынша' },
+  'upcoming appointment': { ru: 'предстоящая запись', kk: 'алдағы жазылу' },
+  'upcoming appointments': { ru: 'предстоящих записей', kk: 'алдағы жазылу' },
+  'Saved Clinics': { ru: 'Сохранённые клиники', kk: 'Сақталған клиникалар' },
+  'View saved': { ru: 'Открыть избранное', kk: 'Таңдаулыны ашу' },
+  'Save a clinic to compare it later.': {
+    ru: 'Сохраните клинику, чтобы сравнить позже.',
+    kk: 'Кейін салыстыру үшін клиниканы сақтаңыз.',
+  },
+  'Quick Actions': { ru: 'Быстрые действия', kk: 'Жылдам әрекеттер' },
+  'My Appointments': { ru: 'Мои записи', kk: 'Менің жазылуларым' },
+  'Medical Records': { ru: 'Медкарта', kk: 'Медициналық карта' },
+  'Upcoming Appointments': { ru: 'Предстоящие записи', kk: 'Алдағы жазылулар' },
+  'View All Appointments': { ru: 'Все записи', kk: 'Барлық жазылулар' },
+  'No upcoming appointments yet. Compare prices and book your first visit.': {
+    ru: 'Пока нет записей. Сравните цены и запишитесь на первый визит.',
+    kk: 'Әзірге жазылу жоқ. Бағаларды салыстырып, алғашқы визитке жазылыңыз.',
+  },
+  'Recent Searches': { ru: 'Недавние поиски', kk: 'Соңғы іздеулер' },
+  'No searches yet.': { ru: 'Пока нет поисков.', kk: 'Әзірге іздеу жоқ.' },
+  'Start one now': { ru: 'Начать поиск', kk: 'Іздеуді бастау' },
+
+  // --- Appointments ---
+  'Manage your clinical visits and medical history': {
+    ru: 'Управляйте визитами и историей лечения',
+    kk: 'Визиттер мен емдеу тарихын басқарыңыз',
+  },
+  'Find a price & book': { ru: 'Найти цену и записаться', kk: 'Бағаны тауып, жазылу' },
+  'Service Name': { ru: 'Услуга', kk: 'Қызмет' },
+  'Date & Time': { ru: 'Дата и время', kk: 'Күні мен уақыты' },
+  Actions: { ru: 'Действия', kk: 'Әрекеттер' },
+  appointment: { ru: 'запись', kk: 'жазылу' },
+  appointments: { ru: 'записей', kk: 'жазылу' },
+
+  // --- Favorites ---
+  'Saved Clinics & Favorites': { ru: 'Сохранённые клиники', kk: 'Сақталған клиникалар' },
+  'Manage your preferred medical providers and compare their prices in one place.': {
+    ru: 'Управляйте любимыми клиниками и сравнивайте их цены в одном месте.',
+    kk: 'Таңдаулы клиникаларды басқарып, бағаларын бір жерде салыстырыңыз.',
+  },
+
+  // --- Medical records ---
+  'Results from your completed appointments, in one secure place.': {
+    ru: 'Результаты ваших завершённых визитов в одном защищённом месте.',
+    kk: 'Аяқталған визиттеріңіздің нәтижелері бір қауіпсіз жерде.',
+  },
+  'View Appointments': { ru: 'Открыть записи', kk: 'Жазылуларды ашу' },
+  'Records sync is not connected yet': {
+    ru: 'Синхронизация результатов пока не подключена',
+    kk: 'Нәтижелерді синхрондау әзірге қосылмаған',
+  },
+  'Completed Visits': { ru: 'Завершённые визиты', kk: 'Аяқталған визиттер' },
+  'Storage Status': { ru: 'Состояние хранилища', kk: 'Қойма күйі' },
+  'Securely Encrypted': { ru: 'Надёжно зашифровано', kk: 'Сенімді шифрланған' },
+  'Results Sync': { ru: 'Синхронизация результатов', kk: 'Нәтижелерді синхрондау' },
+  'Search records...': { ru: 'Поиск по записям...', kk: 'Жазбалардан іздеу...' },
+  'No records match your search.': { ru: 'Ничего не найдено.', kk: 'Ештеңе табылмады.' },
+  'Your results will appear here after completed appointments.': {
+    ru: 'Результаты появятся здесь после завершённых визитов.',
+    kk: 'Нәтижелер аяқталған визиттерден кейін осында пайда болады.',
+  },
+  'Results pending': { ru: 'Результаты в ожидании', kk: 'Нәтижелер күтілуде' },
+  'Why pending?': { ru: 'Почему в ожидании?', kk: 'Неге күтілуде?' },
+
+  // --- Service detail (more) ---
+  'How prices for this service have moved over time.': {
+    ru: 'Как менялась цена на эту услугу со временем.',
+    kk: 'Осы қызмет бағасы уақыт өте өзгерді.',
+  },
+  'Get notified by email when a clinic drops its price for this service.': {
+    ru: 'Получайте e-mail, когда клиника снизит цену на эту услугу.',
+    kk: 'Клиника осы қызмет бағасын төмендеткенде e-mail алыңыз.',
+  },
+  "You're subscribed to price drops.": {
+    ru: 'Вы подписаны на снижение цены.',
+    kk: 'Сіз баға төмендеуіне жазылдыңыз.',
+  },
+  'Could not load offers': { ru: 'Не удалось загрузить предложения', kk: 'Ұсыныстарды жүктеу мүмкін болмады' },
+  Service: { ru: 'Услуга', kk: 'Қызмет' },
+  'Lowest price found:': { ru: 'Минимальная цена:', kk: 'Ең төмен баға:' },
+  'Highest price found:': { ru: 'Максимальная цена:', kk: 'Ең жоғары баға:' },
+  for: { ru: 'для', kk: 'үшін' },
+
+  // --- Map (Russian source keys → add EN + KK) ---
+  'Карта клиник': { en: 'Clinics map', kk: 'Клиникалар картасы' },
+  'Все города': { en: 'All cities', kk: 'Барлық қалалар' },
+  Город: { en: 'City', kk: 'Қала' },
+  'Не удалось загрузить карту': { en: 'Could not load the map', kk: 'Картаны жүктеу мүмкін болмады' },
+  'Попробуйте позже.': { en: 'Please try again later.', kk: 'Кейінірек қайталап көріңіз.' },
+  'Нет клиник с координатами': {
+    en: 'No clinics with coordinates',
+    kk: 'Координаттары бар клиникалар жоқ',
+  },
+  'Открыть админ-панель →': { en: 'Open admin panel →', kk: 'Әкімші панелін ашу →' },
 }

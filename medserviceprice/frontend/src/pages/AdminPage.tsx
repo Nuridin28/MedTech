@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Badge, Button, Skeleton } from '@/components/ui'
 import { adminApi, api, ApiError } from '@/api/client'
 import { cn } from '@/lib/utils'
-import type { LogEntry, ParseLog, ServiceSuggestion, UnmatchedItem } from '@/api/types'
+import type { Alert, LogEntry, ParseLog, ServiceSuggestion, UnmatchedItem } from '@/api/types'
 
 const KEY_STORAGE = 'msp_admin_key'
 
@@ -58,6 +58,7 @@ export function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [logs, setLogs] = useState<ParseLog[]>([])
   const [unmatched, setUnmatched] = useState<UnmatchedItem[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
@@ -66,9 +67,14 @@ export function AdminPage() {
       setLoading(true)
       setMsg(null)
       try {
-        const [l, u] = await Promise.all([adminApi.parseLogs(k), adminApi.unmatched(k)])
+        const [l, u, a] = await Promise.all([
+          adminApi.parseLogs(k),
+          adminApi.unmatched(k),
+          adminApi.alerts(k),
+        ])
         setLogs(l)
         setUnmatched(u)
+        setAlerts(a)
         setAuthed(true)
         localStorage.setItem(KEY_STORAGE, k)
       } catch (e) {
@@ -137,6 +143,50 @@ export function AdminPage() {
 
       {authed && (
         <>
+          {/* Alerts banner */}
+          {alerts.length > 0 && (
+            <section className="border border-error/40 bg-error/5 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                <h2 className="font-headline-md text-headline-md text-error flex items-center gap-2">
+                  <Icon name="notification_important" className="text-[22px]" filled />
+                  Алёрты ({alerts.length})
+                </h2>
+                <Button
+                  variant="outline"
+                  onClick={() => action(() => adminApi.ackAllAlerts(key), 'Все алёрты отмечены прочитанными')}
+                >
+                  Отметить все
+                </Button>
+              </div>
+              <ul className="space-y-2">
+                {alerts.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-start justify-between gap-3 bg-surface-container-lowest dark:bg-surface-container border border-outline-variant rounded-lg p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge tone={a.severity === 'error' ? 'error' : 'warning'}>{a.severity}</Badge>
+                        <span className="font-mono text-[13px] text-secondary">{a.source_key}</span>
+                        <span className="text-text-subtle text-[12px]">
+                          {new Date(a.created_at).toLocaleString('ru-RU')}
+                        </span>
+                      </div>
+                      <p className="text-on-surface font-body-sm mt-1">{a.message}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => action(() => adminApi.ackAlert(key, a.id), 'Алёрт отмечен')}
+                      className="text-primary font-label-bold text-[13px] hover:underline whitespace-nowrap"
+                    >
+                      Прочитано
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {/* Actions */}
           <section className="flex flex-wrap gap-3">
             <Button variant="primary" onClick={() => action(() => adminApi.runParse(key), 'Парсинг поставлен в очередь')}>

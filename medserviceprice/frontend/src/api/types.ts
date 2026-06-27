@@ -225,6 +225,17 @@ export interface ImportResponse {
   filename: string
 }
 
+/* ---- Operational alerts ---- */
+export interface Alert {
+  id: string
+  source_key: string
+  severity: 'error' | 'warning' | 'info'
+  kind: string
+  message: string
+  acknowledged: boolean
+  created_at: string
+}
+
 /* ---- ELK logs ---- */
 export interface LogEntry {
   '@timestamp'?: string | null

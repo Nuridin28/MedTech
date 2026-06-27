@@ -13,9 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.security import require_admin
-from app.models import ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
+from app.models import Alert, ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
 from app.parsers.registry import all_source_keys
 from app.schemas import (
+    AlertOut,
     ImportResponse,
     LogsResponse,
     ParseLogOut,
@@ -109,6 +110,53 @@ async def run_enrich(only_missing: bool = True) -> dict:
 
     res = enrich_clinics.delay(only_missing)
     return {"queued": True, "task_id": str(res.id)}
+
+
+@router.get("/alerts", response_model=list[AlertOut])
+async def list_alerts(
+    acknowledged: bool = False, limit: int = 100, db: AsyncSession = Depends(get_db)
+) -> list[AlertOut]:
+    rows = (
+        await db.execute(
+            select(Alert)
+            .where(Alert.acknowledged.is_(acknowledged))
+            .order_by(Alert.created_at.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+    return [
+        AlertOut(
+            id=str(a.id), source_key=a.source_key, severity=a.severity, kind=a.kind,
+            message=a.message, acknowledged=a.acknowledged, created_at=a.created_at,
+        )
+        for a in rows
+    ]
+
+
+@router.post("/alerts/{alert_id}/ack")
+async def ack_alert(alert_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    from datetime import datetime, timezone
+
+    a = (await db.execute(select(Alert).where(Alert.id == alert_id))).scalar_one_or_none()
+    if a is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    a.acknowledged = True
+    a.acknowledged_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"ok": True, "acknowledged": str(alert_id)}
+
+
+@router.post("/alerts/ack-all")
+async def ack_all_alerts(db: AsyncSession = Depends(get_db)) -> dict:
+    from datetime import datetime, timezone
+
+    res = await db.execute(
+        update(Alert).where(Alert.acknowledged.is_(False)).values(
+            acknowledged=True, acknowledged_at=datetime.now(timezone.utc)
+        )
+    )
+    await db.commit()
+    return {"ok": True, "acknowledged_count": res.rowcount or 0}
 
 
 @router.get("/logs", response_model=LogsResponse)

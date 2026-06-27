@@ -1,4 +1,5 @@
 import type {
+  Alert,
   ClinicDetail,
   ClinicsMapResponse,
   ImportResponse,
@@ -138,6 +139,15 @@ export const adminApi = {
   },
   runGeocode(key: string): Promise<{ queued: boolean; task_id: string }> {
     return adminFetch('/geocode/run', key, { method: 'POST' })
+  },
+  alerts(key: string, acknowledged = false): Promise<Alert[]> {
+    return adminFetch<Alert[]>(`/alerts?acknowledged=${acknowledged}`, key)
+  },
+  ackAlert(key: string, id: string): Promise<unknown> {
+    return adminFetch(`/alerts/${id}/ack`, key, { method: 'POST' })
+  },
+  ackAllAlerts(key: string): Promise<{ acknowledged_count: number }> {
+    return adminFetch('/alerts/ack-all', key, { method: 'POST' })
   },
   logs(key: string, params: LogsQuery = {}): Promise<LogsResponse> {
     const qs = new URLSearchParams(

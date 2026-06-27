@@ -234,3 +234,28 @@ class ClinicReview(Base):
         UniqueConstraint("source", "external_id", name="uq_review_source_extid"),
         Index("idx_reviews_clinic", "clinic_id"),
     )
+
+
+class Alert(Base):
+    """Operational alert raised when data collection goes wrong — a parse fails,
+    returns no records, or a source goes stale. Surfaced in the admin panel and
+    optionally emailed, so source breakage is caught before users see empty pages."""
+
+    __tablename__ = "alerts"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    source_key: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(Text, nullable=False)   # 'error' | 'warning' | 'info'
+    kind: Mapped[str] = mapped_column(Text, nullable=False)       # parse_failed | no_records | source_stale
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint("severity IN ('error','warning','info')", name="ck_alert_severity"),
+        Index("idx_alerts_open", "acknowledged", "created_at"),
+        Index("idx_alerts_dedup", "source_key", "kind", "acknowledged"),
+    )

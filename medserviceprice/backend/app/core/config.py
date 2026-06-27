@@ -76,6 +76,12 @@ class Settings(BaseSettings):
     places_budget: int = 1000        # hard lifetime ceiling on Places API calls
     places_max_per_run: int = 50     # per-run cap so you enrich in controlled batches
 
+    # --- Operational alerts ---
+    # Where to email alerts (parse failed / no records / stale source). Empty = log only.
+    alert_email: str = Field(default="")
+    # A source with no successful parse in this many hours is flagged "stale".
+    source_stale_hours: int = Field(default=48)
+
     # --- Logging / ELK observability ---
     # JSON logs always go to stdout (Filebeat-friendly). When ELASTIC_ENABLED is
     # true the app ALSO ships them straight to Elasticsearch (non-blocking) so the

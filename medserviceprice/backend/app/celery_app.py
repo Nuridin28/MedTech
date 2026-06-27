@@ -64,3 +64,9 @@ celery_app.conf.beat_schedule["price-drop-alerts"] = {
     "task": "app.tasks.subscriptions_task.notify_price_drops",
     "schedule": crontab(hour="9,18", minute=0),
 }
+
+# Flag sources that stopped parsing successfully — every 6 hours.
+celery_app.conf.beat_schedule["source-health-check"] = {
+    "task": "app.tasks.health_task.check_source_health",
+    "schedule": crontab(hour="*/6", minute=15),
+}

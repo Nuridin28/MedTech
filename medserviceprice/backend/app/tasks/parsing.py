@@ -55,6 +55,12 @@ def parse_source(self, source_key: str) -> dict:
                 finished_at=datetime.now(timezone.utc),
             )
         )
+        try:
+            from app.services.alerts import evaluate_parse_outcome
+
+            evaluate_parse_outcome(db, source_key, status, records_count)
+        except Exception:  # alerting must never break the task
+            logger.exception("[%s] alert evaluation failed", source_key)
         db.commit()
         db.close()
 
