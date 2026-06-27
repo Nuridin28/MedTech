@@ -325,7 +325,43 @@ export const DICT: Record<string, Partial<Record<Lang, string>>> = {
     en: 'No clinics with coordinates',
     kk: 'Координаттары бар клиникалар жоқ',
   },
-  'Открыть админ-панель →': { en: 'Open admin panel →', kk: 'Әкімші панелін ашу →' },
+  'Открыть админ-панель': { en: 'Open admin panel', kk: 'Әкімші панелін ашу' },
+  'Синие маркеры — проверенные клиники (из официальных прайс-листов). Число в кружке — сколько клиник в этом районе; приблизьте карту, чтобы кружок разделился на отдельные клиники.':
+    {
+      en: 'Blue markers are verified clinics (from official price lists). The number in the circle is how many clinics are in that area; zoom in to split the circle into individual clinics.',
+      kk: 'Көк маркерлер — тексерілген клиникалар (ресми баға тізімдерінен). Шеңбердегі сан — осы ауданда қанша клиника бар; шеңберді жеке клиникаларға бөлу үшін картаны жақындатыңыз.',
+    },
+
+  // --- AI assistant ---
+  'Открыть чат-ассистент': { en: 'Open chat assistant', kk: 'Чат-ассистентті ашу' },
+  'Закрыть чат': { en: 'Close chat', kk: 'Чатты жабу' },
+  'Чат-ассистент': { en: 'Chat assistant', kk: 'Чат-ассистент' },
+  Ассистент: { en: 'Assistant', kk: 'Ассистент' },
+  'Помогу разобраться с сервисом': {
+    en: 'I can help you use the service',
+    kk: 'Сервисті пайдалануға көмектесемін',
+  },
+  'Чем помочь?': { en: 'How can I help?', kk: 'Қалай көмектесе аламын?' },
+  'Спросите про поиск и сравнение цен, карту клиник или подписку на снижение цены.': {
+    en: 'Ask about searching and comparing prices, the clinics map, or price-drop alerts.',
+    kk: 'Бағаларды іздеу мен салыстыру, клиникалар картасы немесе баға төмендеуіне жазылу туралы сұраңыз.',
+  },
+  'Печатает…': { en: 'Typing…', kk: 'Теруде…' },
+  'Ваш вопрос': { en: 'Your question', kk: 'Сұрағыңыз' },
+  'Спросите о сервисе…': { en: 'Ask about the service…', kk: 'Сервис туралы сұраңыз…' },
+  Отправить: { en: 'Send', kk: 'Жіберу' },
+  'Отвечает только на вопросы о MedServicePrice.kz': {
+    en: 'Answers only questions about MedServicePrice.kz',
+    kk: 'Тек MedServicePrice.kz туралы сұрақтарға жауап береді',
+  },
+  'Слишком много запросов. Подождите немного и попробуйте снова.': {
+    en: 'Too many requests. Please wait a moment and try again.',
+    kk: 'Сұраулар тым көп. Сәл күтіп, қайталап көріңіз.',
+  },
+  'Не удалось получить ответ. Попробуйте позже.': {
+    en: 'Could not get a response. Please try again later.',
+    kk: 'Жауап алу мүмкін болмады. Кейінірек қайталаңыз.',
+  },
 
   // --- Home bento cards (with numbers) ---
   'High-precision imaging starting from 15,000 ₸. Compare 45 clinics.': {

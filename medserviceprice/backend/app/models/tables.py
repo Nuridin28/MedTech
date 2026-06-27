@@ -236,6 +236,37 @@ class ClinicReview(Base):
     )
 
 
+class CatalogSuggestion(Base):
+    """AI-proposed new catalog position, clustered from the unmatched queue.
+
+    The LLM only SUGGESTS — an analyst approves it in the admin panel before it
+    becomes a real catalog entry (human-in-the-loop normalization). On approval the
+    proposed synonyms (the raw names it covers) auto-attach their offers."""
+
+    __tablename__ = "catalog_suggestions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    proposed_name_norm: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(Text, nullable=False)
+    synonyms: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    sample_count: Mapped[int] = mapped_column(Integer, default=0)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="pending")
+    applied_service_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("services_catalog.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('laboratory','doctor_visit','diagnostics','procedure')",
+            name="ck_suggestion_category",
+        ),
+        CheckConstraint("status IN ('pending','applied','rejected')", name="ck_suggestion_status"),
+        Index("idx_suggestions_status", "status", "sample_count"),
+    )
+
+
 class Alert(Base):
     """Operational alert raised when data collection goes wrong — a parse fails,
     returns no records, or a source goes stale. Surfaced in the admin panel and

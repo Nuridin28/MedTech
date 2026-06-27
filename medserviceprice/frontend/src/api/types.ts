@@ -192,6 +192,18 @@ export interface ClinicsMapResponse {
   items: ClinicPin[]
 }
 
+/* ---- AI assistant ---- */
+export interface ChatTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatResponse {
+  reply: string
+  /** 'answered' | 'refused_offtopic' | 'blocked_input' | 'blocked_output' */
+  decision: string
+}
+
 /* ---- Admin (TZ §7.2) ---- */
 export interface ParseLog {
   id: string
@@ -247,6 +259,17 @@ export interface AdminStats {
   offers_by_category: Record<string, number>
   offers_by_city: Record<string, number>
   avg_price_by_category: Record<string, number>
+}
+
+/* ---- AI catalog suggestions ---- */
+export interface CatalogSuggestion {
+  id: string
+  proposed_name_norm: string
+  category: string
+  synonyms: string[]
+  sample_count: number
+  status: string
+  created_at: string
 }
 
 /* ---- Operational alerts ---- */

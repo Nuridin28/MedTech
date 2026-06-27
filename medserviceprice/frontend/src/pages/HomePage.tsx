@@ -182,9 +182,9 @@ export function HomePage() {
             </div>
             <Link
               to="/search"
-              className="text-primary font-label-bold flex items-center gap-1 hover:underline"
+              className="text-primary font-label-bold hover:underline"
             >
-              {t('View all services')} <Icon name="arrow_forward" />
+              {t('View all services')}
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter">

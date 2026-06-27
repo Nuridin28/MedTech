@@ -1,6 +1,7 @@
 """ORM models package."""
 from app.models.tables import (
     Alert,
+    CatalogSuggestion,
     Clinic,
     ClinicReview,
     ParseLog,
@@ -23,4 +24,5 @@ __all__ = [
     "PriceHistory",
     "Subscription",
     "Alert",
+    "CatalogSuggestion",
 ]

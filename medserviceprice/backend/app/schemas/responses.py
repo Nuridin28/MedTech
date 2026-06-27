@@ -193,6 +193,17 @@ class AdminStats(BaseModel):
     avg_price_by_category: dict[str, float]
 
 
+# --- AI catalog suggestions ---
+class CatalogSuggestionOut(BaseModel):
+    id: str
+    proposed_name_norm: str
+    category: str
+    synonyms: list[str]
+    sample_count: int
+    status: str
+    created_at: datetime
+
+
 # --- Operational alerts ---
 class AlertOut(BaseModel):
     id: str
@@ -236,3 +247,20 @@ class ClinicPin(BaseModel):
 
 class ClinicsMapResponse(BaseModel):
     items: list[ClinicPin]
+
+
+# --- AI assistant (domain-scoped chatbot behind a safety gateway) ---
+class ChatTurn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=1000)
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+    history: list[ChatTurn] = Field(default_factory=list, max_length=12)
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    # 'answered' | 'refused_offtopic' | 'blocked_input' | 'blocked_output'
+    decision: str

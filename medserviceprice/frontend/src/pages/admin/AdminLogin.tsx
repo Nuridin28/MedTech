@@ -57,7 +57,7 @@ export function AdminLogin() {
           to="/"
           className="mt-4 block text-center text-text-subtle font-label-bold text-[13px] hover:text-primary"
         >
-          ← На сайт
+          На сайт
         </Link>
       </form>
     </div>

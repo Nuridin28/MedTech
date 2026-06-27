@@ -148,10 +148,9 @@ export function DashboardPage() {
             {favoriteClinicIds.length > 0 ? (
               <Link
                 to="/favorites"
-                className="inline-flex items-center gap-1 text-primary font-label-bold text-label-bold underline"
+                className="inline-flex items-center text-primary font-label-bold text-label-bold underline"
               >
                 <span>{t('View saved')}</span>
-                <Icon name="chevron_right" className="text-sm" />
               </Link>
             ) : (
               <p className="font-body-sm text-body-sm text-text-subtle">
@@ -172,7 +171,6 @@ export function DashboardPage() {
                   <Icon name="add_circle" />
                   <span className="font-label-bold text-label-bold">{t('Find a Price')}</span>
                 </div>
-                <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
               <Link
                 to="/appointments"
@@ -182,7 +180,6 @@ export function DashboardPage() {
                   <Icon name="calendar_today" />
                   <span className="font-label-bold text-label-bold">{t('My Appointments')}</span>
                 </div>
-                <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
               <Link
                 to="/records"
@@ -192,7 +189,6 @@ export function DashboardPage() {
                   <Icon name="description" />
                   <span className="font-label-bold text-label-bold">{t('Medical Records')}</span>
                 </div>
-                <Icon name="chevron_right" className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
             </div>
           </div>

@@ -10,7 +10,7 @@ from app.core.config import settings
 
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.debug and settings.environment == "development",
+    echo=settings.sql_echo,  # opt-in; off by default so logs/ELK aren't flooded with SQL
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,

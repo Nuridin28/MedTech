@@ -181,7 +181,7 @@ function ClinicRow({
         <FreshnessTag freshnessDays={offer.freshness_days} />
       </td>
       <td className="p-4">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col items-start gap-1">
           <p className="font-price-display text-price-display text-primary">
             {formatPrice(offer.price_kzt)}
           </p>
@@ -292,11 +292,11 @@ export function ServiceDetailPage() {
             <Link className="hover:text-primary" to="/search">
               {t('Services')}
             </Link>
-            <Icon name="chevron_right" className="text-[14px]" />
+            <span className="text-outline-variant" aria-hidden="true">/</span>
             {category && (
               <>
                 <span className="capitalize">{CATEGORY_LABEL[category] ?? category}</span>
-                <Icon name="chevron_right" className="text-[14px]" />
+                <span className="text-outline-variant" aria-hidden="true">/</span>
               </>
             )}
             <span className="text-on-surface">{serviceName}</span>

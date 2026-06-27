@@ -159,7 +159,7 @@ export function SearchResultsPage() {
           color: o.is_lowest ? '#16794d' : o.clinic.logo_color,
           popupHtml:
             `<strong>${o.clinic.name}</strong><br/>${formatPrice(o.price_kzt, o.currency)}<br/>` +
-            `<a href="/clinic/${o.clinic.id}">профиль →</a>`,
+            `<a href="/clinic/${o.clinic.id}">профиль</a>`,
         })),
     [items],
   )
@@ -171,11 +171,11 @@ export function SearchResultsPage() {
         <Link className="hover:text-primary" to="/">
           {t('Home')}
         </Link>
-        <Icon name="chevron_right" className="text-[16px]" />
+        <span className="text-outline-variant" aria-hidden="true">/</span>
         <Link className="hover:text-primary" to="/search">
           {t('Search')}
         </Link>
-        <Icon name="chevron_right" className="text-[16px]" />
+        <span className="text-outline-variant" aria-hidden="true">/</span>
         <span className="text-on-surface font-label-bold">{serviceName}</span>
       </nav>
 
@@ -522,15 +522,6 @@ export function SearchResultsPage() {
                       : 'border border-outline-variant',
                   )}
                 >
-                  {o.is_lowest && (
-                    <div className="absolute -top-3 left-6">
-                      <Badge tone="success">
-                        <Icon name="trending_down" className="text-[14px]" />
-                        {t('Best price')}
-                      </Badge>
-                    </div>
-                  )}
-
                   {/* Compare toggle (TZ §3.4) */}
                   <button
                     type="button"
@@ -627,6 +618,12 @@ export function SearchResultsPage() {
                     </div>
 
                     <div className="flex flex-col items-stretch md:items-end gap-3 md:min-w-[180px]">
+                      {o.is_lowest && (
+                        <Badge tone="success" className="self-start md:self-end">
+                          <Icon name="trending_down" className="text-[14px]" />
+                          {t('Best price')}
+                        </Badge>
+                      )}
                       <div className="text-left md:text-right">
                         <div
                           className={cn(
@@ -757,10 +754,10 @@ export function SearchResultsPage() {
                 type="button"
                 disabled={page <= 1}
                 onClick={() => patchParams({ page: String(page - 1) })}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-10 px-4 flex items-center justify-center rounded-lg border border-outline-variant font-label-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t('Previous page')}
               >
-                <Icon name="chevron_left" />
+                {t('Назад')}
               </button>
               <span className="px-4 font-label-bold text-on-surface">
                 {t('Page')} {page} {t('of')} {totalPages}
@@ -769,10 +766,10 @@ export function SearchResultsPage() {
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => patchParams({ page: String(page + 1) })}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-10 px-4 flex items-center justify-center rounded-lg border border-outline-variant font-label-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t('Next page')}
               >
-                <Icon name="chevron_right" />
+                {t('Вперёд')}
               </button>
             </div>
           )}

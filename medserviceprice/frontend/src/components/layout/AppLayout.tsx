@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
 import { TopNav } from './TopNav'
 import { Footer } from './Footer'
+import { AssistantChat } from '@/components/AssistantChat'
 
 /**
  * App shell: sticky nav + animated route outlet + footer.
@@ -35,6 +36,7 @@ export function AppLayout() {
         </AnimatePresence>
       </main>
       <Footer />
+      <AssistantChat />
     </div>
   )
 }

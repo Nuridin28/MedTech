@@ -1,6 +1,9 @@
 import type {
   AdminStats,
   Alert,
+  CatalogSuggestion,
+  ChatResponse,
+  ChatTurn,
   ClinicDetail,
   ClinicsMapResponse,
   ImportResponse,
@@ -96,6 +99,31 @@ export const api = {
     if (!res.ok) throw new ApiError('Subscription failed', res.status)
     return res.json()
   },
+
+  /** GET /api/assistant/status — whether the AI assistant is configured/on. */
+  assistantStatus(): Promise<{ enabled: boolean }> {
+    return get<{ enabled: boolean }>('/assistant/status')
+  },
+
+  /** POST /api/assistant/chat — domain-scoped chatbot (validated server-side). */
+  async assistantChat(message: string, history: ChatTurn[]): Promise<ChatResponse> {
+    const res = await fetch(`${BASE}/api/assistant/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history }),
+    })
+    if (!res.ok) {
+      let detail = `Request failed (${res.status})`
+      try {
+        const body = await res.json()
+        if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : detail
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(detail, res.status)
+    }
+    return res.json() as Promise<ChatResponse>
+  },
 }
 
 /* ---- Admin API (TZ §7.2) — all calls carry the X-API-Key header. ---- */
@@ -140,6 +168,21 @@ export const adminApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ service_id: serviceId, add_as_synonym: addSynonym }),
     })
+  },
+  aiSuggest(key: string): Promise<{ queued: boolean; task_id: string }> {
+    return adminFetch('/normalization/ai-suggest', key, { method: 'POST' })
+  },
+  renormalize(key: string): Promise<{ queued: boolean; task_id: string }> {
+    return adminFetch('/normalization/renormalize', key, { method: 'POST' })
+  },
+  suggestions(key: string, status = 'pending'): Promise<CatalogSuggestion[]> {
+    return adminFetch<CatalogSuggestion[]>(`/normalization/suggestions?status=${status}`, key)
+  },
+  applySuggestion(key: string, id: string): Promise<{ ok: boolean; offers_attached: number }> {
+    return adminFetch(`/normalization/suggestions/${id}/apply`, key, { method: 'POST' })
+  },
+  rejectSuggestion(key: string, id: string): Promise<unknown> {
+    return adminFetch(`/normalization/suggestions/${id}/reject`, key, { method: 'POST' })
   },
   runGeocode(key: string): Promise<{ queued: boolean; task_id: string }> {
     return adminFetch('/geocode/run', key, { method: 'POST' })

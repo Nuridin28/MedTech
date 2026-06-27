@@ -69,7 +69,7 @@ class ElasticsearchHandler(logging.Handler):
         if self._es is None:
             from elasticsearch import Elasticsearch
 
-            kwargs: dict = {"request_timeout": 5, "retry_on_timeout": False}
+            kwargs: dict = {"request_timeout": 5, "retry_on_timeout": False, "max_retries": 0}
             if settings.elastic_user:
                 kwargs["basic_auth"] = (settings.elastic_user, settings.elastic_password)
             self._es = Elasticsearch(settings.elasticsearch_url, **kwargs)
@@ -127,6 +127,19 @@ def setup_logging() -> None:
     root.setLevel(logging.INFO)
     for h in list(root.handlers):  # replace default handlers with JSON stdout
         root.removeHandler(h)
+
+    # Silence the ES client's own chatter and, crucially, stop it propagating to the
+    # root handlers — otherwise shipping logs to a down ES would log connection errors
+    # that get re-queued and shipped again (a feedback loop / log flood).
+    for noisy in ("elastic_transport", "elasticsearch", "urllib3"):
+        lg = logging.getLogger(noisy)
+        lg.setLevel(logging.ERROR)
+        lg.propagate = False
+
+    # Drop per-statement SQL echo and access-log noise to WARNING so the logs panel
+    # surfaces real signal (parsing, errors, tasks) — warnings/errors still flow.
+    for chatty in ("sqlalchemy.engine", "sqlalchemy.engine.Engine", "uvicorn.access"):
+        logging.getLogger(chatty).setLevel(logging.WARNING)
 
     stream = logging.StreamHandler()
     stream.setFormatter(JsonFormatter())

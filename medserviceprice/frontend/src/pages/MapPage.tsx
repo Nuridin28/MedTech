@@ -21,11 +21,10 @@ export function MapPage() {
         name: c.name,
         lat: c.lat,
         lng: c.lng,
-        badge: String(c.offers_count),
         color: c.verified ? '#0052cc' : '#7b2600',
         popupHtml:
           `<strong>${c.name}</strong><br/>${c.address ?? c.city}<br/>` +
-          `${c.offers_count} цен · <a href="/clinic/${c.id}">профиль →</a>`,
+          `${c.offers_count} цен · <a href="/clinic/${c.id}">профиль</a>`,
       })),
     [data],
   )
@@ -71,7 +70,7 @@ export function MapPage() {
           description={t('Запустите геокодирование в админ-панели (или дождитесь ночного запуска), чтобы клиники появились на карте.')}
           action={
             <Link to="/admin" className="text-primary font-label-bold hover:underline">
-              {t('Открыть админ-панель →')}
+              {t('Открыть админ-панель')}
             </Link>
           }
         />
@@ -85,7 +84,7 @@ export function MapPage() {
 
       <p className="mt-4 text-text-subtle font-body-sm flex items-center gap-2">
         <Icon name="info" className="text-[16px]" />
-        {t('Синие маркеры — проверенные клиники (из официальных прайс-листов); число в маркере — количество цен.')}
+        {t('Синие маркеры — проверенные клиники (из официальных прайс-листов). Число в кружке — сколько клиник в этом районе; приблизьте карту, чтобы кружок разделился на отдельные клиники.')}
       </p>
     </main>
   )

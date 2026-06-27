@@ -13,11 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.security import require_admin
-from app.models import Alert, ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
+from app.models import Alert, CatalogSuggestion, ParseLog, ServiceCatalog, ServiceOffer, UnmatchedQueue
 from app.parsers.registry import all_source_keys
 from app.schemas import (
     AdminStats,
     AlertOut,
+    CatalogSuggestionOut,
     ImportResponse,
     LogsResponse,
     ParseLogOut,
@@ -28,6 +29,7 @@ from app.schemas import (
 )
 from app.services.admin_stats import get_admin_stats
 from app.services.file_extract import SUPPORTED_EXTENSIONS
+from app.services.ingest import invalidate_cache
 from app.services.log_query import query_logs
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
@@ -119,6 +121,103 @@ async def run_enrich(only_missing: bool = True) -> dict:
 
     res = enrich_clinics.delay(only_missing)
     return {"queued": True, "task_id": str(res.id)}
+
+
+@router.post("/normalization/ai-suggest")
+async def ai_suggest(batch: int = 120) -> dict:
+    """Cluster the unmatched queue into proposed catalog positions via LLM."""
+    from app.tasks.normalize_ai_task import ai_suggest_catalog
+
+    res = ai_suggest_catalog.delay(batch)
+    return {"queued": True, "task_id": str(res.id)}
+
+
+@router.post("/normalization/renormalize")
+async def renormalize() -> dict:
+    """Re-run the matcher so newly-approved catalog positions attach existing offers."""
+    from app.tasks.normalize_ai_task import renormalize_offers
+
+    res = renormalize_offers.delay()
+    return {"queued": True, "task_id": str(res.id)}
+
+
+@router.get("/normalization/suggestions", response_model=list[CatalogSuggestionOut])
+async def list_suggestions(
+    status: str = "pending", limit: int = 200, db: AsyncSession = Depends(get_db)
+) -> list[CatalogSuggestionOut]:
+    rows = (
+        await db.execute(
+            select(CatalogSuggestion)
+            .where(CatalogSuggestion.status == status)
+            .order_by(CatalogSuggestion.sample_count.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+    return [
+        CatalogSuggestionOut(
+            id=str(s.id), proposed_name_norm=s.proposed_name_norm, category=s.category,
+            synonyms=list(s.synonyms or []), sample_count=s.sample_count, status=s.status,
+            created_at=s.created_at,
+        )
+        for s in rows
+    ]
+
+
+@router.post("/normalization/suggestions/{sug_id}/apply")
+async def apply_suggestion(sug_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    """Approve an AI suggestion → create/extend the catalog position and attach the
+    offers carrying its synonyms (human-in-the-loop normalization)."""
+    sug = (
+        await db.execute(select(CatalogSuggestion).where(CatalogSuggestion.id == sug_id))
+    ).scalar_one_or_none()
+    if sug is None:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    if sug.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Already {sug.status}")
+
+    # Reuse an existing catalog row with the same name, else create one.
+    svc = (
+        await db.execute(
+            select(ServiceCatalog).where(ServiceCatalog.name_norm == sug.proposed_name_norm)
+        )
+    ).scalar_one_or_none()
+    if svc is None:
+        svc = ServiceCatalog(
+            name_norm=sug.proposed_name_norm, category=sug.category, synonyms=list(sug.synonyms or [])
+        )
+        db.add(svc)
+        await db.flush()
+    else:
+        svc.synonyms = list({*(svc.synonyms or []), *(sug.synonyms or [])})
+
+    syns = list(sug.synonyms or [])
+    attached = await db.execute(
+        update(ServiceOffer)
+        .where(ServiceOffer.service_name_raw.in_(syns), ServiceOffer.service_id.is_(None))
+        .values(service_id=svc.id)
+    )
+    await db.execute(
+        update(UnmatchedQueue)
+        .where(UnmatchedQueue.service_name_raw.in_(syns), UnmatchedQueue.status == "pending")
+        .values(status="resolved", suggested_id=svc.id)
+    )
+    sug.status = "applied"
+    sug.applied_service_id = svc.id
+    await db.commit()
+    invalidate_cache()
+    return {"ok": True, "service_id": str(svc.id), "offers_attached": attached.rowcount or 0}
+
+
+@router.post("/normalization/suggestions/{sug_id}/reject")
+async def reject_suggestion(sug_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    sug = (
+        await db.execute(select(CatalogSuggestion).where(CatalogSuggestion.id == sug_id))
+    ).scalar_one_or_none()
+    if sug is None:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    sug.status = "rejected"
+    await db.commit()
+    return {"ok": True, "rejected": str(sug_id)}
 
 
 @router.get("/alerts", response_model=list[AlertOut])

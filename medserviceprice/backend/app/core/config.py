@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     app_name: str = "MedServicePrice.kz API"
     environment: str = Field(default="development")
     debug: bool = Field(default=True)
+    # Echo every SQL statement to logs — opt-in only (floods stdout/ELK when on).
+    sql_echo: bool = Field(default=False)
 
     # --- Database ---
     postgres_user: str = "msp"
@@ -92,6 +94,27 @@ class Settings(BaseSettings):
     elastic_user: str = ""
     elastic_password: str = ""
     kibana_url: str = Field(default="")  # shown as a deep-link in the admin panel
+
+    # --- AI assistant (OpenAI) — domain-scoped chatbot behind a safety gateway ---
+    # OFF by default and useless without a key: the endpoint returns 503 when the
+    # assistant is disabled or the key is missing. The key lives ONLY on the backend
+    # (never shipped to the browser); every call passes through app/services/assistant.py
+    # which validates the user prompt AND the model's reply (moderation + scope + leak checks).
+    assistant_enabled: bool = Field(default=False)
+    openai_api_key: str = Field(default="")
+    openai_base_url: str = Field(default="https://api.openai.com/v1")
+    # Cheap model for the answer + the scope/intent classifier. Keep them small: the
+    # assistant only answers narrow questions about this product.
+    openai_model: str = Field(default="gpt-4o-mini")
+    openai_classifier_model: str = Field(default="gpt-4o-mini")
+    openai_timeout_seconds: float = Field(default=20.0)
+    openai_max_output_tokens: int = Field(default=500)
+    # Guardrails / abuse limits.
+    assistant_max_input_chars: int = Field(default=1000)
+    assistant_max_history: int = Field(default=6)          # prior turns kept for context
+    assistant_rate_per_minute: int = Field(default=12)     # per-IP burst guard
+    assistant_rate_per_day: int = Field(default=200)       # per-IP daily guard
+    assistant_daily_budget_calls: int = Field(default=5000)  # global OpenAI call ceiling / day
 
     # --- Email notifications (TZ §3.4) — optional; logs if SMTP_HOST unset ---
     smtp_host: str = ""
