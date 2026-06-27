@@ -59,6 +59,17 @@ def _get_or_create_clinic(db: Session, rec: RawServiceRecord, cache: dict) -> Cl
         )
         db.add(clinic)
         db.flush()
+    else:
+        # Refresh volatile metadata on re-parse so corrected source URLs / new
+        # coordinates land without wiping the DB (e.g. the doq URL-format fix).
+        if rec.clinic.source_url and clinic.source_url != rec.clinic.source_url:
+            clinic.source_url = rec.clinic.source_url
+        if clinic.lat is None and rec.clinic.lat is not None:
+            clinic.lat = rec.clinic.lat
+        if clinic.lng is None and rec.clinic.lng is not None:
+            clinic.lng = rec.clinic.lng
+        if not clinic.address and rec.clinic.address:
+            clinic.address = rec.clinic.address
     cache[key] = clinic
     return clinic
 
@@ -169,6 +180,7 @@ def ingest_records(
                 offer.parsed_at = started
                 offer.is_active = True
                 offer.duration_days = rec.duration_days
+                offer.source_url = rec.source_url  # refresh corrected source links
                 if service_id and offer.service_id is None:
                     offer.service_id = service_id
                 updated += 1

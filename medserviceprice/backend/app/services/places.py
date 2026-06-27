@@ -49,6 +49,83 @@ def enabled() -> bool:
     return False
 
 
+def photo_enabled() -> bool:
+    if settings.places_photo_provider == "google":
+        return bool(settings.google_places_key)
+    if settings.places_photo_provider == "2gis":
+        return bool(settings.twogis_api_key)
+    return False
+
+
+def fetch_photo(name: str, city: str) -> str | None:
+    """Photo-only lookup (e.g. Google for photos while 2GIS supplies ratings).
+    Returns a stable image URL with no embedded key. None if disabled/not found."""
+    if not photo_enabled():
+        return None
+    try:
+        if settings.places_photo_provider == "google":
+            return _google_photo(name, city)
+        if settings.places_photo_provider == "2gis":
+            info = _fetch_2gis(name, city)
+            return info.photo_url if info else None
+    except Exception as exc:
+        logger.warning("photo lookup failed for %s: %s", name, exc)
+    return None
+
+
+def _google_photo(name: str, city: str) -> str | None:
+    """Photo via Places API (New): searchText -> place id -> Place Details photos.
+    (Text Search does not return photos reliably; Place Details does.)"""
+    place = _google_search_new(name, city, field_mask="places.id")
+    if not place or not place.get("id"):
+        return None
+    return _google_resolve_photo(_google_place_photos(place["id"]))
+
+
+def _google_place_photos(place_id: str) -> list:
+    key = settings.google_places_key
+    with httpx.Client(timeout=15) as c:
+        r = c.get(
+            f"https://places.googleapis.com/v1/places/{place_id}",
+            headers={"X-Goog-Api-Key": key, "X-Goog-FieldMask": "photos"},
+        )
+        if r.status_code != 200:
+            logger.warning("google place photos %s: %s %s", place_id, r.status_code, r.text[:120])
+            return []
+        return r.json().get("photos") or []
+
+
+def _google_search_new(name: str, city: str, field_mask: str) -> dict | None:
+    """Places API (New) Text Search — returns the first place or None."""
+    key = settings.google_places_key
+    with httpx.Client(timeout=15) as c:
+        r = c.post(
+            "https://places.googleapis.com/v1/places:searchText",
+            headers={"X-Goog-Api-Key": key, "X-Goog-FieldMask": field_mask},
+            json={"textQuery": f"{name} {city}", "maxResultCount": 1,
+                  "regionCode": "KZ", "languageCode": "ru"},
+        )
+        if r.status_code != 200:
+            logger.warning("google searchText %s: %s %s", name, r.status_code, r.text[:160])
+            return None
+        places_ = r.json().get("places") or []
+        return places_[0] if places_ else None
+
+
+def _google_resolve_photo(photos: list) -> str | None:
+    if not photos or not photos[0].get("name"):
+        return None
+    key = settings.google_places_key
+    with httpx.Client(timeout=15) as c:
+        m = c.get(
+            f"https://places.googleapis.com/v1/{photos[0]['name']}/media",
+            params={"maxWidthPx": 800, "key": key, "skipHttpRedirect": "true"},
+        )
+        if m.status_code != 200:
+            return None
+        return m.json().get("photoUri")
+
+
 def fetch_place(name: str, city: str) -> PlaceInfo | None:
     """Look up a clinic on the configured official provider. None if disabled."""
     if not enabled():
@@ -101,45 +178,37 @@ def _fetch_2gis(name: str, city: str) -> PlaceInfo | None:
     )
 
 
-# --- Google Places API (Place Details) ---
+# --- Google Places API (New) — one Text Search returns it all ---
 def _fetch_google(name: str, city: str) -> PlaceInfo | None:
-    find = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
-    with httpx.Client(timeout=15) as c:
-        r = c.get(find, params={
-            "input": f"{name} {city}", "inputtype": "textquery",
-            "fields": "place_id", "key": settings.google_places_key,
-        })
-        r.raise_for_status()
-        cand = (r.json().get("candidates") or [])
-        if not cand:
-            return None
-        place_id = cand[0]["place_id"]
-        det = c.get("https://maps.googleapis.com/maps/api/place/details/json", params={
-            "place_id": place_id,
-            "fields": "rating,user_ratings_total,formatted_address,geometry,reviews,photos,opening_hours",
-            "key": settings.google_places_key,
-        })
-        det.raise_for_status()
-        res = det.json().get("result") or {}
-    loc = (res.get("geometry") or {}).get("location") or {}
+    mask = (
+        "places.id,places.displayName,places.rating,places.userRatingCount,"
+        "places.formattedAddress,places.location,places.photos"
+    )
+    if settings.places_reviews_limit > 0:
+        mask += ",places.reviews"
+    place = _google_search_new(name, city, field_mask=mask)
+    if not place:
+        return None
+    loc = place.get("location") or {}
+    pid = place.get("id", "")
     reviews = [
         ReviewItem(
-            external_id=f"{place_id}:{i}",
+            external_id=f"{pid}:{i}",
             rating=rv.get("rating"),
-            text=rv.get("text"),
-            author_alias=rv.get("author_name"),
-            published_at=None,
+            text=(rv.get("text") or {}).get("text"),
+            author_alias=(rv.get("authorAttribution") or {}).get("displayName"),
+            published_at=rv.get("publishTime"),
         )
-        for i, rv in enumerate((res.get("reviews") or [])[: settings.places_reviews_limit])
+        for i, rv in enumerate((place.get("reviews") or [])[: settings.places_reviews_limit])
     ]
     return PlaceInfo(
-        place_id=place_id,
+        place_id=pid,
         source="google",
-        rating=res.get("rating"),
-        reviews_count=res.get("user_ratings_total"),
-        address=res.get("formatted_address"),
-        lat=loc.get("lat"),
-        lng=loc.get("lng"),
-        working_hours="; ".join((res.get("opening_hours") or {}).get("weekday_text") or []) or None,
+        rating=place.get("rating"),
+        reviews_count=place.get("userRatingCount"),
+        photo_url=_google_resolve_photo(place.get("photos") or []),
+        address=place.get("formattedAddress"),
+        lat=loc.get("latitude"),
+        lng=loc.get("longitude"),
         reviews=reviews,
     )

@@ -67,10 +67,14 @@ class Settings(BaseSettings):
     # --- Places API (ratings/reviews/photos) — official, OFF by default ---
     # Reviews/ratings/photos must come from an official API, never scraped from
     # maps (ToS) — see clinic_enrich.py for the safe own-site enrichment path.
-    places_provider: str = Field(default="none")  # 'none' | '2gis' | 'google'
+    places_provider: str = Field(default="none")  # 'none' | '2gis' | 'google'  (ratings/reviews/address)
+    places_photo_provider: str = Field(default="none")  # 'none' | 'google' | '2gis'  (clinic photo only)
     twogis_api_key: str = ""
     google_places_key: str = ""
     places_reviews_limit: int = 5
+    # Quota guards — each clinic is looked up AT MOST ONCE (result cached in DB).
+    places_budget: int = 1000        # hard lifetime ceiling on Places API calls
+    places_max_per_run: int = 50     # per-run cap so you enrich in controlled batches
 
     # --- Email notifications (TZ §3.4) — optional; logs if SMTP_HOST unset ---
     smtp_host: str = ""

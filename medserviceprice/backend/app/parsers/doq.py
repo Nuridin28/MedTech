@@ -120,6 +120,15 @@ class DoqParser(BaseParser):
                     loc = branch.get("location") or {}
                     phones = branch.get("phones") or []
                     cat = _TYPE_CATEGORY.get((service.get("type") or "").lower())
+                    # Canonical doq.kz clinic page (verified via sitemap-clinics.xml):
+                    #   https://doq.kz/clinics/{city_slug}/{clinic_slug}
+                    # NOTE: path is /clinics/{city}/{slug}, not /{city}/clinics/{slug}.
+                    clinic_slug = (branch.get("clinic_slug") or "").strip()
+                    clinic_url = (
+                        f"https://doq.kz/clinics/{self.city_slug}/{clinic_slug}"
+                        if clinic_slug
+                        else None
+                    )
                     clinic = RawClinic(
                         name=branch.get("name") or "doq clinic",
                         city=self.city_name,
@@ -127,7 +136,7 @@ class DoqParser(BaseParser):
                         phone=phones[0] if phones else branch.get("direct_call_phone"),
                         lat=loc.get("lat"),
                         lng=loc.get("lng"),
-                        source_url=f"https://doq.kz/almaty/clinics/{branch.get('clinic_slug', '')}",
+                        source_url=clinic_url,
                     )
                     records.append(
                         RawServiceRecord(
@@ -136,7 +145,8 @@ class DoqParser(BaseParser):
                             price=float(price),
                             currency="KZT",
                             category_hint=cat,
-                            source_url=url,
+                            # Show the human clinic page as the offer source, not the API URL.
+                            source_url=clinic_url or url,
                             extra={"doq_service_id": service.get("id"), "type": service.get("type")},
                         )
                     )
