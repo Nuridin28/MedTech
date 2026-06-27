@@ -15,6 +15,8 @@ from app.core.db import get_db
 from app.core.redis_client import cache_get, cache_set
 from app.models import Clinic, PriceHistory, ServiceCatalog, ServiceOffer, Subscription
 from app.schemas import (
+    BasketRequest,
+    BasketResponse,
     ClinicDetail,
     ClinicPin,
     ClinicsMapResponse,
@@ -25,6 +27,7 @@ from app.schemas import (
     SubscriptionOut,
 )
 from app.services import queries
+from app.services.basket import basket_cheapest
 from app.services.search import attach_offer_stats, search_services
 
 router = APIRouter(prefix="/api", tags=["public"])
@@ -178,6 +181,12 @@ async def price_history(
         service_name_norm=svc.name_norm,
         points=[{"recorded_at": r.recorded_at, "price_kzt": float(r.price_kzt)} for r in rows],
     )
+
+
+@router.post("/basket/cheapest", response_model=BasketResponse)
+async def basket(payload: BasketRequest, db: AsyncSession = Depends(get_db)) -> BasketResponse:
+    """Cheapest clinic(s) for a bundle of services (check-up basket)."""
+    return await basket_cheapest(db, payload.service_ids, payload.city)
 
 
 @router.post("/subscriptions", response_model=SubscriptionOut)

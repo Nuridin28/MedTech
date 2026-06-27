@@ -233,6 +233,35 @@ class LogsResponse(BaseModel):
     kibana_url: str | None = None
 
 
+# --- Basket / check-up (cheapest clinic for a bundle of services) ---
+class BasketLine(BaseModel):
+    service_id: str
+    service_name_norm: str
+    price_kzt: float
+    offer_id: str
+
+
+class BasketOption(BaseModel):
+    clinic: "ClinicMini"
+    covered: int
+    total_requested: int
+    total_price: float
+    lines: list[BasketLine]
+    missing: list[str]
+
+
+class BasketRequest(BaseModel):
+    service_ids: list[uuid.UUID] = Field(min_length=1, max_length=25)
+    city: str | None = None
+
+
+class BasketResponse(BaseModel):
+    requested: int
+    options: list[BasketOption]
+    best_single_total: float | None = None  # cheapest full-coverage clinic
+    best_split_total: float | None = None    # theoretical cheapest if split across clinics
+
+
 # --- Map (TZ §3.4) ---
 class ClinicPin(BaseModel):
     id: str

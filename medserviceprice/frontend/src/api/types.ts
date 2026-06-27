@@ -176,6 +176,30 @@ export interface DashboardStats {
   tracked_services: number
 }
 
+/* ---- Basket / check-up ---- */
+export interface BasketLine {
+  service_id: string
+  service_name_norm: string
+  price_kzt: number
+  offer_id: string
+}
+
+export interface BasketOption {
+  clinic: Offer['clinic']
+  covered: number
+  total_requested: number
+  total_price: number
+  lines: BasketLine[]
+  missing: string[]
+}
+
+export interface BasketResponse {
+  requested: number
+  options: BasketOption[]
+  best_single_total: number | null
+  best_split_total: number | null
+}
+
 /* ---- Map (TZ §3.4) ---- */
 export interface ClinicPin {
   id: string

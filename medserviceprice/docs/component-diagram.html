@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedServicePrice.kz — Детальная компонентная схема</title>
+<style>
+  :root{ --ink:#0f0f0f; --ink2:#333; --muted:#555; --line:#bdbdbd; --paper:#fff; --panel:#f6f6f6; --chip:#eaeaea; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Helvetica Neue",Arial,"Segoe UI",system-ui,sans-serif;line-height:1.55;
+    padding:48px 32px 110px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1600px;margin:0 auto}
+  header.doc{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:30px}
+  header.doc h1{font-size:30px;margin:0 0 6px;font-weight:800}
+  header.doc .lead{color:var(--muted);font-size:14.5px;margin:0;max-width:980px}
+  header.doc .crumbs{color:var(--ink2);font-size:12.5px;font-family:"Courier New",monospace;margin-top:8px}
+  header.doc .crumbs b{color:var(--ink)}
+  .card{background:var(--paper);border:1.5px solid var(--ink);border-radius:4px;padding:24px 26px;margin:0 0 28px}
+  .card>h2{display:flex;align-items:baseline;gap:12px;margin:0 0 4px;font-size:21px;font-weight:800;
+    border-bottom:1px solid var(--line);padding-bottom:12px}
+  .card>h2 .num{font-family:"Courier New",monospace;font-size:15px;font-weight:800;color:var(--paper);
+    background:var(--ink);border-radius:3px;padding:3px 9px;line-height:1}
+  .card .cap{color:var(--muted);font-size:13.5px;margin:14px 0 16px}
+  .diagram{background:#fcfcfc;border:1px solid var(--line);border-radius:4px;padding:22px 16px;overflow-x:auto;text-align:center}
+  pre.mermaid{margin:0;background:transparent;font-size:15px}
+  .note{font-size:13.5px;color:var(--ink2);margin-top:16px;padding:14px 18px;background:var(--panel);
+    border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:3px}
+  .note b{color:var(--ink)} .note code,li code,p code{background:var(--chip);padding:1px 6px;border-radius:3px;
+    font-family:"Courier New",monospace;font-size:12.5px}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--ink);color:var(--paper);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  tbody tr:nth-child(even){background:var(--panel)}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .legend .it{display:flex;align-items:center;gap:7px}
+  .legend .sw{width:30px;height:15px;border:1.5px solid var(--ink);display:inline-block}
+  .sw.s1{background:#fff}.sw.s2{background:#e9e9e9}.sw.s3{background:#cfcfcf}.sw.s4{background:#f5f5f5}.sw.s5{background:#fff;border-style:dashed}
+  footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;margin-top:30px}
+  footer code{background:var(--chip);padding:1px 6px;border-radius:3px;font-family:"Courier New",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc">
+    <h1>MedServicePrice.kz — Детальная компонентная схема</h1>
+    <p class="lead">Полная карта компонентов и ключевых потоков работающей системы: парсинг с дедупликацией,
+       нормализация, потоки запросов к LLM (ассистент + AI-нормализация каталога), и наблюдаемость
+       (структурные логи → ELK, parse_logs, алёрты). Строгий чёрно-белый стиль для печати и ревью.</p>
+    <p class="crumbs">Источники: KDL · Invitro · doq · файловый импорт &nbsp;|&nbsp; модули: api · services · parsers · tasks &nbsp;|&nbsp; данные: Postgres · Redis · Elasticsearch</p>
+    <div class="legend">
+      <span class="it"><span class="sw s1"></span> Контроллеры / актор</span>
+      <span class="it"><span class="sw s2"></span> Сервис бизнес-логики</span>
+      <span class="it"><span class="sw s3"></span> Парсер / задача</span>
+      <span class="it"><span class="sw s4"></span> Хранилище</span>
+      <span class="it"><span class="sw s5"></span> Внешний сервис</span>
+    </div>
+  </header>
+
+  <!-- 1. FULL COMPONENT MAP -->
+  <div class="card">
+    <h2><span class="num">1</span> Полная карта компонентов</h2>
+    <p class="cap">Все модули backend/worker и их связи с данными и внешними сервисами.</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  subgraph CLIENT["FRONTEND (React SPA)"]
+    pages["Публичные страницы<br/>search · clinic · service ·<br/>map · basket(чек-ап)"]
+    admin_ui["Админ-SPA<br/>обзор · источники ·<br/>нормализация · логи · алёрты"]
+    apiclient["api/client.ts<br/>(контракт)"]
+  end
+  nginx["NGINX<br/>SPA + /api proxy"]
+
+  subgraph API["BACKEND · api/"]
+    pub["api/public<br/>search · offers · clinics ·<br/>price-history · basket · subscriptions"]
+    adm["api/admin<br/>stats · parse · unmatched ·<br/>normalization · alerts · logs · import"]
+    ass["api/assistant<br/>chat (LLM-ассистент)"]
+    sec["core/security<br/>X-API-Key"]
+  end
+
+  subgraph SVC["BACKEND · services/"]
+    search["search<br/>lexical+semantic+RRF"]
+    norm["normalization<br/>fuzzy (2 порога)"]
+    qmod["queries / basket / admin_stats"]
+    ing["ingest<br/>дедуп + конвейер"]
+    ainorm["ai_normalize<br/>LLM-кластеризация"]
+    assistant["assistant<br/>safety gateway"]
+    enrich["clinic_enrich / places"]
+    geo["geocode"]
+    notify["notify / alerts"]
+    logq["log_query"]
+  end
+
+  subgraph WK["WORKER · parsers/ + tasks/"]
+    reg["parsers/registry"]
+    base["parsers/base<br/>robots·retry·delay·hashes"]
+    src4["kdl · invitro · doq · file_source"]
+    t_parse["tasks/parsing"]
+    t_norm["tasks/normalize_ai"]
+    t_misc["tasks: geocode · enrich ·<br/>subscriptions · health · embeddings"]
+  end
+
+  PG[("PostgreSQL<br/>raw · catalog · clinics ·<br/>offers · history · queues ·<br/>alerts · suggestions")]
+  REDIS[("Redis<br/>broker · cache · rate-limit")]
+  ES[("Elasticsearch<br/>msp-logs-*")]
+
+  ext_src["Источники<br/>kdl/invitro/doq + файлы"]
+  openai["OpenAI API"]
+  nomi["OSM Nominatim"]
+  places["2GIS / Google Places"]
+  smtp["SMTP"]
+
+  pages --> apiclient --> nginx
+  admin_ui --> apiclient
+  nginx --> pub & adm & ass
+  adm --> sec
+  pub --> search & qmod
+  search --> norm
+  ass --> assistant --> openai
+  pub & adm & qmod --> PG
+  pub <--> REDIS
+  adm -.->|enqueue| REDIS --> t_parse & t_norm & t_misc
+  t_parse --> reg --> src4 --> base --> ext_src
+  t_parse --> ing --> norm
+  t_norm --> ainorm --> openai
+  t_misc --> enrich --> places
+  t_misc --> geo --> nomi
+  t_misc --> notify --> smtp
+  ing --> PG
+  ing -.->|invalidate| REDIS
+  logq --> ES
+
+  classDef ctrl fill:#fff,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef svc fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef prs fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  classDef ext fill:#fff,stroke:#000,color:#000,stroke-width:1.5px,stroke-dasharray:5 4;
+  class pages,admin_ui,apiclient,nginx,pub,adm,ass,sec ctrl;
+  class search,norm,qmod,ing,ainorm,assistant,enrich,geo,notify,logq svc;
+  class reg,base,src4,t_parse,t_norm,t_misc prs;
+  class PG,REDIS,ES data; class ext_src,openai,nomi,places,smtp ext;
+    </pre></div>
+  </div>
+
+  <!-- 2. PARSING + DEDUP -->
+  <div class="card">
+    <h2><span class="num">2</span> Парсинг и дедупликация — пошагово</h2>
+    <p class="cap">Конвейер <code>tasks/parsing.py</code> → <code>services/ingest.py</code>. Две независимые дедупликации (сырьё и оффер) + алёрты.</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  start["beat (ежедневно) ИЛИ админ /parse/run"] --> task["parse_source(source_key)"]
+  task --> getp["registry.get_parser(key)"]
+  getp --> fetch["BaseParser.fetch()<br/>robots.txt · UA · delay 1.5c · retry×3"]
+  fetch --> parse["parse() → RawServiceRecord[]<br/>(BeautifulSoup / JSON / файл)"]
+  parse --> loop{по каждой записи}
+
+  loop --> h1["content_hash =<br/>sha256(clinic|name|price|currency)"]
+  h1 --> d1{"есть в<br/>raw_records?"}
+  d1 -->|да| skip1["пропустить сырьё"]
+  d1 -->|нет| ins1["INSERT raw_records<br/>(аудит ≥90 дней)"]
+
+  skip1 --> clinic["clinic upsert<br/>(rating/coords/booking refresh)"]
+  ins1 --> clinic
+  clinic --> nm["normalize(name)"]
+  nm --> nmd{"exact ИЛИ fuzzy:<br/>token_set≥88 И token_sort≥60?"}
+  nmd -->|да| sid["service_id привязан"]
+  nmd -->|нет| uq["→ unmatched_queue (pending)"]
+
+  sid --> h2["offer_hash =<br/>sha256(clinic+name+price)"]
+  uq --> h2
+  h2 --> d2{"есть offer<br/>(clinic, offer_hash)?"}
+  d2 -->|нет| ins2["INSERT service_offers<br/>inserted++"]
+  d2 -->|да| upd2["UPDATE price/parsed_at/<br/>source_url · updated++"]
+
+  ins2 --> ph{"цена ≠ последней<br/>в price_history?"}
+  upd2 --> ph
+  ph -->|да| insph["APPEND price_history"]
+  ph -->|нет| loop
+  insph --> loop
+
+  loop -->|готово| commit["commit"]
+  commit --> log["ParseLog(status, records_count)"]
+  log --> alert["evaluate_parse_outcome()<br/>failed → alert · 0 записей → alert"]
+  alert --> inval["invalidate cache<br/>offers:* ac:* clinic:*"]
+
+  classDef ctrl fill:#fff,stroke:#000,color:#000,stroke-width:2px;
+  classDef step fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef dec fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  class start,task ctrl; class getp,fetch,parse,clinic,nm,sid,h1,h2,skip1,commit,log,alert,inval step;
+  class loop,d1,d2,nmd,ph dec; class ins1,ins2,upd2,uq,insph data;
+    </pre></div>
+    <div class="note"><b>Две хэш-дедупликации намеренно разные:</b>
+      <code>content_hash</code> (включает currency) защищает <b>сырьё</b> в raw_records;
+      <code>offer_hash</code> (clinic+name+price) защищает <b>рабочий оффер</b>. История цен пишется
+      только при изменении цены — так строится реальный таймлайн без дублей.</div>
+  </div>
+
+  <!-- 3. LLM FLOWS -->
+  <div class="card">
+    <h2><span class="num">3</span> Потоки запросов к LLM</h2>
+    <p class="cap">Два независимых LLM-пути: публичный ассистент (за safety-gateway) и админская AI-нормализация каталога.</p>
+
+    <h3 style="font-size:15px;margin:18px 0 8px">3a. Ассистент — safety gateway (публичный чат)</h3>
+    <div class="diagram"><pre class="mermaid">
+flowchart LR
+  u["Пользователь<br/>вопрос"] --> ep["/api/assistant/chat<br/>rate-limit (мин/день/глоб)"]
+  ep --> inj{"injection-паттерны?"}
+  inj -->|да| block1["отказ: blocked_input"]
+  inj -->|нет| mod{"OpenAI Moderation<br/>flagged?"}
+  mod -->|да| block1
+  mod -->|нет| scope{"классификатор LLM:<br/>в теме сервиса?"}
+  scope -->|нет| off["отказ: refused_offtopic"]
+  scope -->|да| ans["LLM-ответ<br/>(узкий system-prompt)"]
+  ans --> leak{"утечка canary /<br/>системного промпта?"}
+  leak -->|да| safe["safe_fallback: blocked_output"]
+  leak -->|нет| ok["ответ: answered"]
+
+  classDef ctrl fill:#fff,stroke:#000,color:#000,stroke-width:2px;
+  classDef dec fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef svc fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  class u,ep ctrl; class inj,mod,scope,leak dec; class ans svc; class block1,off,safe,ok svc;
+    </pre></div>
+    <div class="note">Ключ OpenAI живёт только на backend. Каждый вызов проходит: rate-limit → injection-проверка →
+      модерация → классификатор «в теме?» → генерация → проверка ответа на утечку. Off-topic и утечки отсекаются.</div>
+
+    <h3 style="font-size:15px;margin:22px 0 8px">3b. AI-нормализация каталога (админ, human-in-the-loop)</h3>
+    <div class="diagram"><pre class="mermaid">
+flowchart LR
+  a["Админ<br/>«Сгенерировать (AI)»"] --> q1["/admin/normalization/ai-suggest"]
+  q1 -.->|enqueue| task["task: ai_suggest_catalog"]
+  task --> load["взять топ unmatched по частоте<br/>+ текущий каталог"]
+  load --> llm["LLM: кластеризовать в<br/>name_norm + category + synonyms"]
+  llm --> val["валидация:<br/>категория ∈ 4 · синонимы ⊂ списка"]
+  val --> store["INSERT catalog_suggestions<br/>(status=pending)"]
+  store --> review["Админ: Принять / Отклонить"]
+  review -->|принять| apply["создать ServiceCatalog +<br/>привязать офферы синонимов +<br/>закрыть unmatched"]
+  review -->|отклонить| rej["status=rejected"]
+  apply --> renorm["task: renormalize_offers<br/>(перепрогон матчера)"]
+  renorm --> cov["покрытие ↑"]
+
+  classDef ctrl fill:#fff,stroke:#000,color:#000,stroke-width:2px;
+  classDef svc fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef prs fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  class a,q1 ctrl; class load,llm,val,apply,renorm,cov svc; class task,renorm prs; class store,rej,review data;
+    </pre></div>
+    <div class="note"><b>Инвариант:</b> LLM только <b>предлагает</b> — каталог расширяется лишь после
+      подтверждения аналитиком. При подтверждении синонимы сразу привязывают свои цены, затем
+      перенормализация дотягивает остальное.</div>
+  </div>
+
+  <!-- 4. LOGGING / OBSERVABILITY -->
+  <div class="card">
+    <h2><span class="num">4</span> Логирование и наблюдаемость</h2>
+    <p class="cap">Три уровня: структурные логи (ELK), аудит запусков (parse_logs), проактивные алёрты.</p>
+    <div class="diagram"><pre class="mermaid">
+flowchart TB
+  mods["Все модули<br/>logger.info/warning/exception"] --> root["root logger (JSON)"]
+  root --> stdout["stdout (Filebeat-ready)"]
+  root --> esh["ElasticsearchHandler<br/>очередь + батч bulk (неблок.)"]
+  esh --> es[("Elasticsearch<br/>msp-logs-YYYY.MM.DD")]
+  es --> kib["Kibana"]
+  es --> logsapi["/admin/logs → панель «Логи»<br/>фильтры: уровень/источник/время"]
+  quiet["приглушено: sqlalchemy.engine,<br/>elastic_transport (без зацикливания)"] -.-> root
+
+  task2["parse_source / import_file"] --> plog[("parse_logs<br/>статус · записей · ошибка")]
+  plog --> statsui["/admin/stats → «Состояние источников»"]
+  task2 --> ev["evaluate_parse_outcome"]
+  ev --> al[("alerts<br/>parse_failed · no_records")]
+  health["task: check_source_health (6ч)"] --> al
+  al --> banner["баннер в админке + бейдж"]
+  al --> mail["email (ALERT_EMAIL) / лог"]
+
+  classDef ctrl fill:#fff,stroke:#000,color:#000,stroke-width:2px;
+  classDef svc fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef prs fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
+  classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
+  class mods,root,quiet ctrl; class stdout,esh,kib,logsapi,statsui,banner,mail,ev svc;
+  class task2,health prs; class es,plog,al data;
+    </pre></div>
+    <table>
+      <thead><tr><th>Уровень</th><th>Где</th><th>Что отвечает</th></tr></thead>
+      <tbody>
+        <tr><td>Структурные логи</td><td>Elasticsearch + Kibana + /admin/logs</td><td>детальный поток событий, поиск по уровню/источнику</td></tr>
+        <tr><td>Аудит запусков</td><td>parse_logs (Postgres)</td><td>«запуск X: success, N записей» → дашборд источников</td></tr>
+        <tr><td>Алёрты</td><td>alerts (Postgres) → баннер + email</td><td>проактивно: сбой/0 записей/источник устарел</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    Источник истины — код в <code>medserviceprice/</code>. Обзорная архитектура — <code>docs/architecture.html</code>.
+    Диаграммы: Mermaid (компоненты + потоки парсинга/LLM/логирования).
+  </footer>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true, theme: 'neutral', securityLevel: 'loose',
+    flowchart: { curve: 'linear', nodeSpacing: 55, rankSpacing: 78, htmlLabels: true, useMaxWidth: true, padding: 14 },
+    themeVariables: { fontFamily: 'Helvetica Neue, Arial, sans-serif', fontSize: '15px', lineColor: '#222', textColor: '#0f0f0f', clusterBkg: '#fbfbfb', clusterBorder: '#555' }
+  });
+</script>
+</body>
+</html>

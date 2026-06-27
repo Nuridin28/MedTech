@@ -82,16 +82,25 @@ def enrich_clinics(only_missing: bool = True) -> dict:
 
                 for c in targets:
                     # don't re-spend the main provider's quota if rating already set
-                    attempt_2gis = places.enabled() and c.rating is None
-                    info = places.fetch_place(c.name, c.city) if attempt_2gis else None
-                    if attempt_2gis:
-                        places_calls += 1
-                    c.place_synced_at = datetime.now(timezone.utc)  # stamp even on miss
-                    # photo from a dedicated photo provider (e.g. Google) if still missing
-                    if not c.photo_url and places.photo_enabled():
-                        ph = places.fetch_photo(c.name, c.city)
-                        if ph:
-                            c.photo_url = ph
+                    attempt_provider = places.enabled() and c.rating is None
+                    try:
+                        info = places.fetch_place(c.name, c.city) if attempt_provider else None
+                        if attempt_provider:
+                            places_calls += 1
+                        # photo from a dedicated photo provider (e.g. Google) if still missing
+                        photo = (
+                            places.fetch_photo(c.name, c.city)
+                            if (not c.photo_url and places.photo_enabled())
+                            else None
+                        )
+                    except places.PlacesRateLimited as exc:
+                        # Daily quota hit — stop now, leave this and remaining clinics
+                        # UNSYNCED so they retry once quota is back. Nothing is lost.
+                        logger.warning("enrich_clinics: provider quota reached, stopping: %s", exc)
+                        break
+                    c.place_synced_at = datetime.now(timezone.utc)  # stamp only after a real response/miss
+                    if photo:
+                        c.photo_url = photo
                     time.sleep(0.3)  # spread calls to respect per-minute API quotas
                     if info:
                         c.rating = info.rating if info.rating is not None else c.rating

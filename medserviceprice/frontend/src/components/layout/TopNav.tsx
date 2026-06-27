@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n'
 
 const NAV = [
   { to: '/search', label: 'Clinics' },
+  { to: '/basket', label: 'Checkup' },
   { to: '/map', label: 'Map' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/appointments', label: 'Appointments' },

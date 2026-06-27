@@ -18,6 +18,14 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+class PlacesRateLimited(Exception):
+    """The provider rejected the call due to a daily/quota limit (HTTP 429).
+
+    Distinct from a normal "not found" miss: the caller must NOT mark the clinic as
+    synced, otherwise a transient quota blip would permanently lock it out of retries.
+    """
+
+
 @dataclass
 class ReviewItem:
     external_id: str
@@ -69,6 +77,8 @@ def fetch_photo(name: str, city: str) -> str | None:
         if settings.places_photo_provider == "2gis":
             info = _fetch_2gis(name, city)
             return info.photo_url if info else None
+    except PlacesRateLimited:
+        raise  # let the caller stop the run; don't swallow as a plain miss
     except Exception as exc:
         logger.warning("photo lookup failed for %s: %s", name, exc)
     return None
@@ -111,6 +121,10 @@ def _google_search_new(name: str, city: str, field_mask: str) -> dict | None:
             json={"textQuery": f"{name} {city}", "maxResultCount": 1,
                   "regionCode": "KZ", "languageCode": "ru"},
         )
+        if r.status_code == 429:
+            # Daily/quota limit — signal the caller to stop and retry later instead
+            # of burning the per-clinic sync flag on an empty result.
+            raise PlacesRateLimited(f"google searchText quota for {name}: {r.text[:160]}")
         if r.status_code != 200:
             logger.warning("google searchText %s: %s %s", name, r.status_code, r.text[:160])
             return None
@@ -141,6 +155,8 @@ def fetch_place(name: str, city: str) -> PlaceInfo | None:
             return _fetch_2gis(name, city)
         if settings.places_provider == "google":
             return _fetch_google(name, city)
+    except PlacesRateLimited:
+        raise  # propagate so the caller stops and leaves the clinic unsynced
     except Exception as exc:
         logger.warning("places lookup failed for %s (%s): %s", name, city, exc)
     return None

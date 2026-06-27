@@ -1,6 +1,7 @@
 import type {
   AdminStats,
   Alert,
+  BasketResponse,
   CatalogSuggestion,
   ChatResponse,
   ChatTurn,
@@ -87,6 +88,17 @@ export const api = {
   /** GET /api/clinics-map?city= — geolocated clinics for the map (TZ §3.4). */
   getClinicsMap(city?: string): Promise<ClinicsMapResponse> {
     return get<ClinicsMapResponse>('/clinics-map', { city })
+  },
+
+  /** POST /api/basket/cheapest — cheapest clinic for a bundle of services. */
+  async basketCheapest(serviceIds: string[], city?: string): Promise<BasketResponse> {
+    const res = await fetch(`${BASE}/api/basket/cheapest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ service_ids: serviceIds, city: city ?? null }),
+    })
+    if (!res.ok) throw new ApiError('Basket request failed', res.status)
+    return res.json() as Promise<BasketResponse>
   },
 
   /** POST /api/subscriptions — track a service/clinic price. */

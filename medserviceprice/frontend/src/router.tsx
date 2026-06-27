@@ -9,6 +9,7 @@ import { AppointmentsPage } from '@/pages/AppointmentsPage'
 import { FavoritesPage } from '@/pages/FavoritesPage'
 import { MedicalRecordsPage } from '@/pages/MedicalRecordsPage'
 import { MapPage } from '@/pages/MapPage'
+import { BasketPage } from '@/pages/BasketPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AdminAuthProvider } from '@/lib/adminAuth'
 import { AdminGate } from '@/components/admin/AdminLayout'
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: '/service/:serviceId', element: <ServiceDetailPage /> },
       { path: '/clinic/:clinicId', element: <ClinicProfilePage /> },
       { path: '/map', element: <MapPage /> },
+      { path: '/basket', element: <BasketPage /> },
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/appointments', element: <AppointmentsPage /> },
       { path: '/favorites', element: <FavoritesPage /> },
