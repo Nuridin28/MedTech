@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from app.parsers.base import BaseParser
+from app.parsers.doq import DOQ_CITIES, DoqParser
 from app.parsers.invitro import INVITRO_CITIES, InvitroParser
 from app.parsers.kdl import KDL_CITIES, KDLParser
 
@@ -15,6 +16,7 @@ from app.parsers.kdl import KDL_CITIES, KDLParser
 SOURCES: dict[str, Callable[[], BaseParser]] = {
     **{f"kdl_{slug}": (lambda s=slug: KDLParser(city=s)) for slug in KDL_CITIES},
     **{f"invitro_{slug}": (lambda s=slug: InvitroParser(city=s)) for slug in INVITRO_CITIES},
+    **{f"doq_{slug}": (lambda s=slug: DoqParser(city=s)) for slug in DOQ_CITIES},
 }
 
 
