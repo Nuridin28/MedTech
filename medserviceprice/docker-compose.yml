@@ -27,7 +27,11 @@ services:
     restart: unless-stopped
 
   # --- ELK: log storage + exploration (dev single-node, security off) ---
+  # Optional: only starts with `docker compose --profile elk up`. Off by default
+  # to keep the stack light (ES+Kibana ~2-3GB RAM/disk). To use it, also set
+  # ELASTIC_ENABLED=true in .env so backend/worker/beat ship their JSON logs.
   elasticsearch:
+    profiles: ["elk"]
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
     environment:
       discovery.type: single-node
@@ -46,6 +50,7 @@ services:
     restart: unless-stopped
 
   kibana:
+    profiles: ["elk"]
     image: docker.elastic.co/kibana/kibana:8.15.1
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
@@ -62,7 +67,7 @@ services:
     environment:
       POSTGRES_HOST: db
       REDIS_HOST: redis
-      ELASTIC_ENABLED: "true"
+      ELASTIC_ENABLED: "${ELASTIC_ENABLED:-false}"
       ELASTICSEARCH_URL: http://elasticsearch:9200
       KIBANA_URL: http://localhost:5601
     depends_on:
@@ -83,7 +88,7 @@ services:
     environment:
       POSTGRES_HOST: db
       REDIS_HOST: redis
-      ELASTIC_ENABLED: "true"
+      ELASTIC_ENABLED: "${ELASTIC_ENABLED:-false}"
       ELASTICSEARCH_URL: http://elasticsearch:9200
     depends_on:
       backend:
@@ -101,7 +106,7 @@ services:
     environment:
       POSTGRES_HOST: db
       REDIS_HOST: redis
-      ELASTIC_ENABLED: "true"
+      ELASTIC_ENABLED: "${ELASTIC_ENABLED:-false}"
       ELASTICSEARCH_URL: http://elasticsearch:9200
     depends_on:
       worker:

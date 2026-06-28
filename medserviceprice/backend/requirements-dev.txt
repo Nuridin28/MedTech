@@ -1,0 +1,4 @@
+# Test / CI tooling (not installed in the runtime image).
+# Local convention is to run `python run_tests.py` (no pytest needed); CI uses pytest.
+-r requirements.txt
+pytest==8.3.4
