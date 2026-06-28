@@ -3,73 +3,98 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MedServicePrice.kz — Архитектура (слайд)</title>
+<title>MedServicePrice.kz — Архитектура (слайд 16:9)</title>
 <style>
-  :root{ --ink:#0f0f0f; --muted:#555; --line:#bdbdbd; --paper:#fff; --panel:#f6f6f6; }
+  :root{ --ink:#0f0f0f; --muted:#555; --line:#bdbdbd; --paper:#fff; }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--paper);color:var(--ink);
+  body{margin:0;background:#e6e6e6;color:var(--ink);
     font-family:"Helvetica Neue",Arial,system-ui,sans-serif;
-    padding:40px 32px;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1280px;margin:0 auto}
-  h1{font-size:30px;margin:0 0 2px;font-weight:800;letter-spacing:.2px}
-  .sub{color:var(--muted);font-size:15px;margin:0 0 6px}
-  .tags{color:var(--ink);font-size:13px;font-family:"Courier New",monospace;margin:0 0 18px}
-  .tags b{background:var(--ink);color:var(--paper);padding:2px 8px;border-radius:3px;margin-right:6px}
-  .diagram{border:1.5px solid var(--ink);border-radius:6px;padding:26px 18px;text-align:center;background:#fcfcfc}
-  pre.mermaid{margin:0;font-size:18px}
-  .legend{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;margin-top:16px;font-size:13.5px;color:var(--muted)}
+    padding:24px;-webkit-font-smoothing:antialiased}
+  .bar{max-width:1600px;margin:0 auto 14px}
+  .bar nav{display:flex;flex-wrap:wrap;border:1.5px solid #0f0f0f;border-radius:4px;overflow:hidden;font-size:13px;font-weight:700}
+  .bar nav a{padding:9px 16px;text-decoration:none;color:#0f0f0f;border-right:1px solid #cfcfcf}
+  .bar nav a.active{background:#0f0f0f;color:#fff}
+  .bar .hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+  /* 16:9 slide — screenshot / print this card */
+  .slide{width:100%;max-width:1600px;aspect-ratio:16/9;margin:0 auto;background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 40px -16px rgba(0,0,0,.4);
+    padding:34px 44px;display:flex;flex-direction:column;overflow:hidden}
+  .slide h1{font-size:30px;margin:0;font-weight:800;letter-spacing:.2px}
+  .slide .sub{color:var(--muted);font-size:15px;margin:3px 0 0}
+  .slide .tags{margin:10px 0 0;font-family:"Courier New",monospace;font-size:13px}
+  .slide .tags b{background:var(--ink);color:var(--paper);padding:2px 9px;border-radius:3px;margin-right:7px;display:inline-block;margin-bottom:5px}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;margin-top:6px}
+  pre.mermaid{margin:0;width:100%}
+  .legend{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;font-size:13px;color:var(--muted);padding-top:8px}
   .legend .it{display:flex;align-items:center;gap:8px}
-  .legend .sw{width:34px;height:17px;border:1.5px solid var(--ink);display:inline-block}
+  .legend .sw{width:32px;height:16px;border:1.5px solid var(--ink);display:inline-block}
   .sw.s1{background:#fff}.sw.s2{background:#e9e9e9}.sw.s3{background:#cfcfcf}.sw.s4{background:#f5f5f5}.sw.s5{background:#fff;border-style:dashed}
+
+  @media print{ body{background:#fff;padding:0} .bar{display:none} .slide{box-shadow:none;border:none;max-width:none;height:100vh} }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav style="display:flex;flex-wrap:wrap;border:1.5px solid #0f0f0f;border-radius:4px;overflow:hidden;margin:0 0 22px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700">
-    <a href="presentation.html" style="padding:9px 16px;text-decoration:none;background:#0f0f0f;color:#fff;border-right:1px solid #cfcfcf">Слайд</a>
-    <a href="architecture.html" style="padding:9px 16px;text-decoration:none;color:#0f0f0f;border-right:1px solid #cfcfcf">Архитектура (C4)</a>
-    <a href="component-diagram.html" style="padding:9px 16px;text-decoration:none;color:#0f0f0f;border-right:1px solid #cfcfcf">Компоненты и потоки</a>
-    <a href="parsing-flow.html" style="padding:9px 16px;text-decoration:none;color:#0f0f0f">Конвейер парсинга</a>
-  </nav>
+  <div class="bar">
+    <nav>
+      <a href="presentation.html" class="active">Слайд: схема</a>
+      <a href="stack.html">Слайд: стек</a>
+      <a href="architecture.html">Архитектура (C4)</a>
+      <a href="component-diagram.html">Компоненты и потоки</a>
+      <a href="parsing-flow.html">Конвейер парсинга</a>
+    </nav>
+    <div class="hint">Скриншоть/печатай белую карточку ниже — это готовый слайд 16:9 (или Cmd+P → Landscape → Save as PDF).</div>
+  </div>
 
-  <h1>MedServicePrice.kz — архитектура</h1>
-  <p class="sub">Агрегатор цен на медуслуги в Казахстане · модульный монолит + event-driven ингестия</p>
-  <p class="tags"><b>3 источника + файлы</b> <b>AI-ассистент</b> <b>врачи + слоты</b> <b>ELK</b> <b>Docker · 8 сервисов</b></p>
+  <div class="slide">
+    <div>
+      <h1>MedServicePrice.kz — архитектура</h1>
+      <p class="sub">Агрегатор цен на медуслуги в Казахстане · модульный монолит + event-driven ингестия</p>
+      <p class="tags"><b>3 источника + файлы</b> <b>AI-ассистент (tool-calling)</b> <b>врачи + живые слоты</b> <b>ELK</b> <b>Docker · 8 сервисов</b></p>
+    </div>
 
-  <div class="diagram"><pre class="mermaid">
-flowchart TB
+    <div class="stage"><pre class="mermaid">
+flowchart LR
   users["ПОЛЬЗОВАТЕЛИ<br/>пациент · админ"]
 
   subgraph FE["FRONTEND · React SPA"]
-    site["Сайт: поиск · сравнение · карта ·<br/>чек-ап · ВРАЧИ+СЛОТЫ · история · чат"]
-    admin["Админка: аналитика · нормализация ·<br/>источники · логи · алёрты"]
+    direction TB
+    site["Сайт<br/><span style='font-size:11px;color:#555'>поиск · сравнение · карта · чек-ап ·<br/>ВРАЧИ+СЛОТЫ · история · чат · PWA · i18n</span>"]
+    admin["Админ-SPA<br/><span style='font-size:11px;color:#555'>аналитика · нормализация · логи · алёрты</span>"]
   end
 
   subgraph BE["BACKEND · FastAPI"]
-    api["Public API + Admin API"]
-    ai["AI-ассистент<br/>(tool-calling)"]
+    direction TB
+    api["Public + Admin API<br/><span style='font-size:11px;color:#555'>RRF-гибрид · cache-aside · rate-limit · X-API-Key</span>"]
+    gw["AI-ассистент · safety-gateway<br/><span style='font-size:11px;color:#555'>injection · модерация · scope ·<br/>tool-calling (не RAG) · leak-check</span>"]
   end
 
   subgraph WK["WORKERS · Celery"]
-    pipe["Парсинг → дедуп → нормализация<br/>(+AI) → обогащение → история"]
+    direction TB
+    pipe["Конвейер ингестии<br/><span style='font-size:11px;color:#555'>дедуп (content/offer-hash) ·<br/>нормализация (fuzzy 2 порога + AI) ·<br/>обогащение (валид. города)</span>"]
+    alert["Алёрты + health<br/><span style='font-size:11px;color:#555'>fail / 0 записей / источник устарел</span>"]
   end
 
-  PG[("PostgreSQL<br/>pg_trgm + pgvector")]
-  REDIS[("Redis<br/>кэш + очередь")]
-  ES[("Elasticsearch<br/>логи")]
-  EXT["ВНЕШНИЕ<br/>KDL · Invitro · doq(live) ·<br/>OpenAI · 2GIS/Google · OSM"]
+  subgraph DATA["ДАННЫЕ + observability"]
+    direction TB
+    PG[("PostgreSQL<br/>pg_trgm + pgvector")]
+    REDIS[("Redis<br/>кэш · очередь · rate-limit")]
+    ES[("Elasticsearch + Kibana<br/>JSON-логи")]
+  end
+
+  EXT["ВНЕШНИЕ<br/><span style='font-size:11px;color:#555'>KDL · Invitro · doq(live) ·<br/>OpenAI · 2GIS/Google · OSM</span>"]
 
   users ==> FE
   site ==> api
-  site ==> ai
+  site ==> gw
   admin ==> api
   api ==> PG
   api ==> REDIS
-  ai ==> EXT
-  api -.->|"живые врачи/слоты"| EXT
-  api -.->|"очередь задач"| REDIS ==> pipe
-  pipe ==> PG
-  pipe ==>|"парс/обогащение"| EXT
+  gw ==> EXT
+  api -.->|"врачи / слоты live"| EXT
+  api -.->|"очередь задач"| REDIS ==> pipe ==> PG
+  pipe ==>|"парс / обогащение"| EXT
+  pipe --> alert ==> PG
   BE -.->|"JSON-логи"| ES
   WK -.->|"JSON-логи"| ES
 
@@ -78,24 +103,27 @@ flowchart TB
   classDef async fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
   classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
   classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px,stroke-dasharray:5 4;
-  class users actor; class site,admin,api,ai app; class pipe async; class PG,REDIS,ES data; class EXT ext;
-  </pre></div>
+  class users actor; class site,admin,api,gw app; class pipe,alert async; class PG,REDIS,ES data; class EXT ext;
+    </pre></div>
 
-  <div class="legend">
-    <span class="it"><span class="sw s1"></span> Актор</span>
-    <span class="it"><span class="sw s2"></span> Frontend / Backend</span>
-    <span class="it"><span class="sw s3"></span> Воркеры (Celery)</span>
-    <span class="it"><span class="sw s4"></span> Данные</span>
-    <span class="it"><span class="sw s5"></span> Внешние сервисы</span>
+    <div class="legend">
+      <b style="color:var(--ink)">Под капотом:</b>
+      <span>AI safety-gateway</span><span>·</span>
+      <span>tool-calling (не RAG)</span><span>·</span>
+      <span>дедуп content/offer-hash</span><span>·</span>
+      <span>нормализация 2-порога + AI</span><span>·</span>
+      <span>RRF-гибрид поиск</span><span>·</span>
+      <span>ELK + проактивные алёрты</span><span>·</span>
+      <span>обогащение с валидацией города</span>
+    </div>
   </div>
-</div>
 
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
   mermaid.initialize({
     startOnLoad: true, theme: 'neutral', securityLevel: 'loose',
-    flowchart: { curve: 'linear', nodeSpacing: 60, rankSpacing: 70, htmlLabels: true, useMaxWidth: true, padding: 18 },
-    themeVariables: { fontFamily: 'Helvetica Neue, Arial, sans-serif', fontSize: '17px', lineColor: '#222', textColor: '#0f0f0f', clusterBkg: '#ffffff', clusterBorder: '#444' }
+    flowchart: { curve: 'linear', nodeSpacing: 42, rankSpacing: 70, htmlLabels: true, useMaxWidth: true, padding: 10 },
+    themeVariables: { fontFamily: 'Helvetica Neue, Arial, sans-serif', fontSize: '15px', lineColor: '#222', textColor: '#0f0f0f', clusterBkg: '#ffffff', clusterBorder: '#444' }
   });
 </script>
 </body>

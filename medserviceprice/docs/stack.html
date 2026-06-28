@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedServicePrice.kz — Источники, сервисы, стек (слайд 16:9)</title>
+<style>
+  :root{ --ink:#0f0f0f; --muted:#555; --line:#bdbdbd; --paper:#fff; --panel:#f5f5f5; --chip:#eaeaea; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e6e6e6;color:var(--ink);
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif;padding:24px;-webkit-font-smoothing:antialiased}
+  .bar{max-width:1600px;margin:0 auto 14px}
+  .bar nav{display:flex;flex-wrap:wrap;border:1.5px solid #0f0f0f;border-radius:4px;overflow:hidden;font-size:13px;font-weight:700}
+  .bar nav a{padding:9px 16px;text-decoration:none;color:#0f0f0f;border-right:1px solid #cfcfcf}
+  .bar nav a.active{background:#0f0f0f;color:#fff}
+  .bar .hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+  .slide{width:100%;max-width:1600px;aspect-ratio:16/9;margin:0 auto;background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 40px -16px rgba(0,0,0,.4);
+    padding:30px 40px;display:flex;flex-direction:column;overflow:hidden}
+  .slide h1{font-size:27px;margin:0 0 2px;font-weight:800}
+  .slide .sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+
+  .grid{flex:1;display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto 1fr;gap:18px 26px;min-height:0}
+  .card{border:1.5px solid var(--ink);border-radius:6px;padding:14px 16px;min-height:0}
+  .card h2{font-size:15px;margin:0 0 10px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .card h2 .n{font-family:"Courier New",monospace;font-size:12px;color:var(--paper);background:var(--ink);border-radius:3px;padding:2px 7px;line-height:1}
+  .span2{grid-column:1 / 3}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid var(--ink)}
+  td b{font-weight:700}
+  td code{font-family:"Courier New",monospace;font-size:11.5px;background:var(--chip);padding:1px 5px;border-radius:3px}
+  .note{font-size:12px;color:var(--muted);margin-top:9px;border-left:3px solid var(--ink);padding-left:9px}
+
+  .ext{font-size:13px;line-height:1.5}
+  .ext .row{display:flex;gap:9px;margin-bottom:9px}
+  .ext .ic{font-family:"Courier New",monospace;font-weight:800;font-size:12px;border:1.5px solid var(--ink);border-radius:4px;padding:2px 7px;height:fit-content;white-space:nowrap}
+  .ext b{font-weight:700}
+  .ext .d{color:var(--muted);font-size:12px}
+
+  .stacklabel{font-weight:800;font-size:12.5px;margin:2px 0 6px;text-transform:uppercase;letter-spacing:.4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .chip{font-size:12px;font-family:"Courier New",monospace;border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:3px 8px}
+  .chip.key{border-color:var(--ink);background:#fff;font-weight:700}
+
+  @media print{ body{background:#fff;padding:0} .bar{display:none} .slide{box-shadow:none;border:none;max-width:none;height:100vh} }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <nav>
+      <a href="presentation.html">Слайд: схема</a>
+      <a href="stack.html" class="active">Слайд: стек</a>
+      <a href="architecture.html">Архитектура (C4)</a>
+      <a href="component-diagram.html">Компоненты и потоки</a>
+      <a href="parsing-flow.html">Конвейер парсинга</a>
+    </nav>
+    <div class="hint">Скриншоть/печатай белую карточку ниже — готовый слайд 16:9.</div>
+  </div>
+
+  <div class="slide">
+    <div>
+      <h1>Источники данных, внешние сервисы и стек</h1>
+      <p class="sub">Только публичные цены, без персональных данных пациентов</p>
+    </div>
+
+    <div class="grid">
+      <!-- Источники -->
+      <div class="card">
+        <h2><span class="n">1</span> Источники данных</h2>
+        <table>
+          <thead><tr><th>Источник</th><th>URL</th><th>Способ</th></tr></thead>
+          <tbody>
+            <tr><td><b>KDL Olymp</b></td><td><code>kdlolymp.kz</code></td><td>серверный HTML (BeautifulSoup), по городам</td></tr>
+            <tr><td><b>Invitro KZ</b></td><td><code>invitro.kz</code></td><td>серверный HTML, мультигород</td></tr>
+            <tr><td><b>doq.kz</b></td><td><code>api.doq.kz</code></td><td>публичный JSON API (врачи / диагностика)</td></tr>
+            <tr><td><b>Загрузка файла</b></td><td>—</td><td>прайс в Excel / CSV / PDF / DOCX через админку (<code>file_source.py</code>)</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Каждый источник уважает <b>robots.txt</b>, шлёт <b>User-Agent</b> проекта, выдерживает <b>задержки + ретраи</b>. Только публичные цены, без PII.</p>
+      </div>
+
+      <!-- Внешние сервисы -->
+      <div class="card ext">
+        <h2><span class="n">2</span> Внешние сервисы (API)</h2>
+        <div class="row">
+          <span class="ic">OpenAI</span>
+          <div><b>AI-ассистент</b> (<code>assistant.py</code>): chat-модель с <b>tool-calling</b> — отвечает реальными числами из БД (без галлюцинаций), + классификатор темы и <b>Moderation</b> на вход/выход. <span class="d">Ключ только на сервере.</span></div>
+        </div>
+        <div class="row">
+          <span class="ic">2GIS · OSM</span>
+          <div><b>Карта и маршруты</b>: Leaflet + OpenStreetMap-тайлы, ссылки-маршруты в 2GIS. <span class="d">Без ключа.</span></div>
+        </div>
+      </div>
+
+      <!-- Стек -->
+      <div class="card span2">
+        <h2><span class="n">3</span> Технологический стек</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div>
+            <div class="stacklabel">Backend</div>
+            <div class="chips">
+              <span class="chip key">FastAPI (async)</span><span class="chip">SQLAlchemy 2.0</span><span class="chip">Pydantic v2</span><span class="chip">Uvicorn</span>
+              <span class="chip key">PostgreSQL 16</span><span class="chip">pg_trgm</span><span class="chip">pgvector</span><span class="chip">Alembic</span>
+              <span class="chip key">Redis 7</span><span class="chip key">Celery 5</span>
+              <span class="chip">httpx</span><span class="chip">BeautifulSoup4</span><span class="chip">lxml</span><span class="chip">pdfplumber</span><span class="chip">python-docx</span><span class="chip">openpyxl</span>
+              <span class="chip">rapidfuzz</span><span class="chip">sentence-transformers · MiniLM 384d (опц.)</span>
+              <span class="chip">slowapi</span><span class="chip">tenacity</span><span class="chip key">Elasticsearch 8 (ELK)</span>
+            </div>
+          </div>
+          <div>
+            <div class="stacklabel">Frontend</div>
+            <div class="chips">
+              <span class="chip key">React 18</span><span class="chip">TypeScript</span><span class="chip key">Vite</span><span class="chip">Tailwind</span>
+              <span class="chip">TanStack Query</span><span class="chip">React Router</span><span class="chip">framer-motion</span>
+              <span class="chip key">Leaflet + markercluster</span>
+            </div>
+            <div class="stacklabel" style="margin-top:6px">Парсинг / нормализация</div>
+            <div class="chips">
+              <span class="chip">HTML: BeautifulSoup + lxml</span><span class="chip">файлы: pdfplumber / openpyxl / docx</span>
+              <span class="chip">fuzzy: rapidfuzz (2 порога)</span><span class="chip">semantic: pgvector + MiniLM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
