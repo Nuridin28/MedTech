@@ -152,7 +152,10 @@ export function SearchResultsPage() {
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
-  const serviceName = items[0]?.service_name_norm ?? q ?? t('Medical service')
+  const browseAll = !q && !serviceId
+  const serviceName = browseAll
+    ? t('Все цены по клиникам')
+    : (items[0]?.service_name_norm ?? q ?? t('Medical service'))
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const mapPins: MapPin[] = useMemo(

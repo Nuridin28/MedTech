@@ -22,7 +22,9 @@ export function useOffers(params: OffersQuery) {
     queryFn: () => api.getOffers(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
-    enabled: Boolean(params.service_id || params.q),
+    // Always enabled: with no service_id/q it browses ALL offers across clinics
+    // (the "Clinics" tab landing), narrowable by city/category filters.
+    enabled: true,
   })
 }
 
