@@ -108,6 +108,16 @@ export const DICT: Record<string, Partial<Record<Lang, string>>> = {
   Cancelled: { ru: 'Отменённые', kk: 'Бас тартылған' },
   Cancel: { ru: 'Отменить', kk: 'Болдырмау' },
 
+  // --- Booking modal ---
+  'Book appointment': { ru: 'Запись на приём', kk: 'Қабылдауға жазылу' },
+  'Choose date': { ru: 'Выберите дату', kk: 'Күнді таңдаңыз' },
+  'Choose time': { ru: 'Выберите время', kk: 'Уақытты таңдаңыз' },
+  'Confirm booking': { ru: 'Подтвердить запись', kk: 'Жазылуды растау' },
+  'No slots available for this day': {
+    ru: 'На этот день нет свободного времени',
+    kk: 'Бұл күнге бос уақыт жоқ',
+  },
+
   // --- Home (extended) ---
   'Search medical services': { ru: 'Поиск медуслуг', kk: 'Медқызметтерді іздеу' },
   'Select city': { ru: 'Выберите город', kk: 'Қаланы таңдаңыз' },

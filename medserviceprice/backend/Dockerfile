@@ -14,13 +14,17 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Semantic search (TZ §6.3) — installs sentence-transformers + torch (heavy).
+# Semantic search (TZ §6.3) — sentence-transformers + torch (~2GB). OFF by default
+# to keep the image light. Enable with `--build-arg INSTALL_SEMANTIC=true` and set
+# ENABLE_SEMANTIC=true at runtime. Lexical (pg_trgm) search works without it, and
+# hybrid mode degrades gracefully to lexical.
+ARG INSTALL_SEMANTIC=false
 COPY requirements-semantic.txt .
-RUN pip install -r requirements-semantic.txt
+RUN if [ "$INSTALL_SEMANTIC" = "true" ]; then pip install -r requirements-semantic.txt; fi
 
 COPY . .
 
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
