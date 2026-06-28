@@ -1,4 +1,6 @@
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Icon } from '@/components/ui/Icon'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { cn } from '@/lib/utils'
@@ -19,6 +21,14 @@ const NAV = [
 export function TopNav() {
   const { theme, toggle } = useTheme()
   const { t } = useI18n()
+  const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close the mobile menu on every route change.
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
   return (
     <header className="bg-surface-container-lowest dark:bg-dark-surface-container border-b border-outline-variant dark:border-outline sticky top-0 z-50">
       <nav className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto h-20">
@@ -70,8 +80,61 @@ export function TopNav() {
           >
             {t('Sign In')}
           </Link>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={menuOpen}
+            className="md:hidden text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors"
+          >
+            <Icon name={menuOpen ? 'close' : 'menu'} />
+          </button>
         </div>
       </nav>
+
+      {/* Mobile menu: all top-nav tabs, reachable on small screens. */}
+      <AnimatePresence initial={false}>
+        {menuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="md:hidden overflow-hidden border-t border-outline-variant dark:border-outline"
+          >
+            <div className="flex flex-col px-margin-mobile py-2">
+              {NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'font-label-bold text-label-bold py-3 border-b border-outline-variant/40 dark:border-outline/40 transition-colors',
+                      isActive
+                        ? 'text-primary dark:text-primary-fixed'
+                        : 'text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim',
+                    )
+                  }
+                >
+                  {t(item.label)}
+                </NavLink>
+              ))}
+              <NavLink
+                to="/records"
+                className={({ isActive }) =>
+                  cn(
+                    'font-label-bold text-label-bold py-3 transition-colors',
+                    isActive
+                      ? 'text-primary dark:text-primary-fixed'
+                      : 'text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim',
+                  )
+                }
+              >
+                {t('Medical Records')}
+              </NavLink>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

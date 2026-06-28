@@ -17,17 +17,6 @@ const SORTS = [
   { value: 'experience', label: 'Больше опыта' },
 ]
 
-const WEEKDAYS = [
-  { value: '', label: 'Любой день' },
-  { value: '1', label: 'Понедельник' },
-  { value: '2', label: 'Вторник' },
-  { value: '3', label: 'Среда' },
-  { value: '4', label: 'Четверг' },
-  { value: '5', label: 'Пятница' },
-  { value: '6', label: 'Суббота' },
-  { value: '7', label: 'Воскресенье' },
-]
-
 // 07:00 … 21:00 in 30-min steps for the time pickers
 const TIMES = Array.from({ length: 29 }, (_, i) => {
   const m = 7 * 60 + i * 30
@@ -45,15 +34,16 @@ export function DoctorsPage() {
   const [specialty, setSpecialty] = useState<number | ''>('')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState('rating')
-  const [weekday, setWeekday] = useState('')
+  const [apptDate, setApptDate] = useState('')
   const [timeFrom, setTimeFrom] = useState('')
   const [timeTo, setTimeTo] = useState('')
   const [page, setPage] = useState(1)
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoMsg, setGeoMsg] = useState<string | null>(null)
   const debouncedQ = useDebounce(q, 350)
+  const today = new Date().toISOString().slice(0, 10)
 
-  useEffect(() => setPage(1), [city, specialty, debouncedQ, sort, weekday, timeFrom, timeTo])
+  useEffect(() => setPage(1), [city, specialty, debouncedQ, sort, apptDate, timeFrom, timeTo])
 
   // geolocation for distance sort
   useEffect(() => {
@@ -74,7 +64,7 @@ export function DoctorsPage() {
 
   const useDist = sort === 'distance' && userLoc != null
   const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: ['doctors', city, specialty, debouncedQ, sort, page, userLoc, weekday, timeFrom, timeTo],
+    queryKey: ['doctors', city, specialty, debouncedQ, sort, page, userLoc, apptDate, timeFrom, timeTo],
     queryFn: () =>
       api.getDoctors({
         city,
@@ -85,7 +75,7 @@ export function DoctorsPage() {
         page_size: 15,
         user_lat: useDist ? userLoc!.lat : undefined,
         user_lng: useDist ? userLoc!.lng : undefined,
-        weekday: weekday ? Number(weekday) : undefined,
+        date: apptDate || undefined,
         time_from: timeFrom || undefined,
         time_to: timeTo || undefined,
       }),
@@ -93,7 +83,7 @@ export function DoctorsPage() {
     staleTime: 60_000,
   })
 
-  const timeActive = Boolean(weekday || timeFrom || timeTo)
+  const timeActive = Boolean(apptDate || timeFrom || timeTo)
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -159,15 +149,15 @@ export function DoctorsPage() {
         {/* Convenient time */}
         <div className="md:col-span-4 flex items-center gap-2 flex-wrap border-t border-outline-variant pt-3">
           <span className="font-label-bold text-text-subtle text-[13px] flex items-center gap-1">
-            <Icon name="schedule" className="text-[16px]" /> Удобное время:
+            <Icon name="event" className="text-[16px]" /> Удобное время:
           </span>
-          <select
-            value={weekday}
-            onChange={(e) => setWeekday(e.target.value)}
+          <input
+            type="date"
+            value={apptDate}
+            min={today}
+            onChange={(e) => setApptDate(e.target.value)}
             className="border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest text-on-surface focus:ring-secondary focus:border-secondary"
-          >
-            {WEEKDAYS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
-          </select>
+          />
           <span className="text-text-subtle text-[13px]">с</span>
           <select
             value={timeFrom}
@@ -189,7 +179,7 @@ export function DoctorsPage() {
           {timeActive && (
             <button
               type="button"
-              onClick={() => { setWeekday(''); setTimeFrom(''); setTimeTo('') }}
+              onClick={() => { setApptDate(''); setTimeFrom(''); setTimeTo('') }}
               className="text-error font-label-bold text-[12px] hover:underline"
             >
               сбросить время

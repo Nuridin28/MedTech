@@ -114,13 +114,13 @@ def _hm_to_min(s: str | None) -> int | None:
         return None
 
 
-def _slot_matches(dt_iso: str, weekday: int | None, tf: int | None, tt: int | None) -> bool:
-    """weekday: ISO 1=Mon..7=Sun (None = any). tf/tt: minute bounds [tf, tt)."""
+def _slot_matches(dt_iso: str, on_date: str | None, tf: int | None, tt: int | None) -> bool:
+    """on_date: 'YYYY-MM-DD' (None = any day). tf/tt: minute bounds [tf, tt)."""
     try:
         d = datetime.fromisoformat(dt_iso)
     except Exception:
         return False
-    if weekday and d.isoweekday() != weekday:
+    if on_date and dt_iso[:10] != on_date:
         return False
     mins = d.hour * 60 + d.minute
     if tf is not None and mins < tf:
@@ -155,7 +155,7 @@ async def list_doctors(
     *, city: str, specialty: int | None = None, q: str | None = None,
     sort: str = "rating", page: int = 1, page_size: int = 20,
     user_lat: float | None = None, user_lng: float | None = None,
-    weekday: int | None = None, time_from: str | None = None, time_to: str | None = None,
+    appt_date: str | None = None, time_from: str | None = None, time_to: str | None = None,
 ) -> dict:
     city_id = _CITY_ID.get(city)
     if city_id is None:
@@ -163,7 +163,7 @@ async def list_doctors(
 
     # When a "convenient time" filter is on we must check each candidate's real slots,
     # so we over-fetch a window from offset 0 and paginate the filtered set ourselves.
-    time_filter = bool(weekday or time_from or time_to)
+    time_filter = bool(appt_date or time_from or time_to)
     fetch = 150 if time_filter else max(page_size * 3, 60)
     offset = 0 if time_filter else (page - 1) * page_size
     params = {"city": city_id, "expand": "clinic_branches,services", "limit": fetch, "offset": offset}
@@ -174,7 +174,7 @@ async def list_doctors(
 
     ckey = (
         f"doq:docs:{city}:{specialty}:{q}:{sort}:{page}:{page_size}:{user_lat}:{user_lng}"
-        f":{weekday}:{time_from}:{time_to}"
+        f":{appt_date}:{time_from}:{time_to}"
     )
     cached = await cache_get(ckey)
     if cached is not None:
@@ -191,14 +191,21 @@ async def list_doctors(
 
     # --- convenient-time filter: batch-fetch slots, keep doctors with a match ---
     if time_filter:
-        df = date.today().isoformat()
-        dt = (date.today() + timedelta(days=8)).isoformat()
+        if appt_date:
+            df = appt_date
+            try:
+                dt = (date.fromisoformat(appt_date) + timedelta(days=1)).isoformat()
+            except Exception:
+                dt = appt_date
+        else:
+            df = date.today().isoformat()
+            dt = (date.today() + timedelta(days=8)).isoformat()
         by_doc = await _batch_slots([d["id"] for d in docs], df, dt)
         tf, tt = _hm_to_min(time_from), _hm_to_min(time_to)
         kept = []
         for d in docs:
             good = sorted(
-                s for s in by_doc.get(d["id"], []) if _slot_matches(s, weekday, tf, tt)
+                s for s in by_doc.get(d["id"], []) if _slot_matches(s, appt_date, tf, tt)
             )
             if good:
                 d["matching_slots"] = good[:12]

@@ -239,7 +239,7 @@ export interface DoctorsQuery {
   page_size?: number
   user_lat?: number
   user_lng?: number
-  weekday?: number
+  date?: string
   time_from?: string
   time_to?: string
 }

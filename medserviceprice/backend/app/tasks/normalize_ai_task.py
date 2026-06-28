@@ -93,15 +93,16 @@ def normalize_all(batch: int = 45, max_rounds: int = 250) -> dict:
 
             rounds += 1
             if _pending_queue_count(db) >= before:
-                # No progress — these top names couldn't be clustered. Skip them so the
-                # tail surfaces next round (prevents an infinite loop on stuck names).
+                # No progress — these top names couldn't be clustered. Set them aside
+                # ('ignored' is an allowed queue status) so the tail surfaces next round
+                # (prevents an infinite loop on stuck names).
                 db.execute(
                     update(UnmatchedQueue)
                     .where(
                         UnmatchedQueue.service_name_raw.in_(top_names),
                         UnmatchedQueue.status == "pending",
                     )
-                    .values(status="skipped")
+                    .values(status="ignored")
                 )
                 db.commit()
                 skipped += len(top_names)

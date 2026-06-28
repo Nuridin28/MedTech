@@ -23,14 +23,14 @@ async def list_doctors(
     page_size: int = Query(20, ge=1, le=50),
     user_lat: float | None = Query(None, ge=-90, le=90),
     user_lng: float | None = Query(None, ge=-180, le=180),
-    weekday: int | None = Query(None, ge=1, le=7, description="ISO weekday 1=Mon..7=Sun"),
+    appt_date: str | None = Query(None, alias="date", pattern="^\\d{4}-\\d{2}-\\d{2}$"),
     time_from: str | None = Query(None, pattern="^[0-2]?[0-9]:[0-5][0-9]$"),
     time_to: str | None = Query(None, pattern="^[0-2]?[0-9]:[0-5][0-9]$"),
 ) -> DoctorsResponse:
     return await doq_live.list_doctors(
         city=city, specialty=specialty, q=q, sort=sort, page=page,
         page_size=page_size, user_lat=user_lat, user_lng=user_lng,
-        weekday=weekday, time_from=time_from, time_to=time_to,
+        appt_date=appt_date, time_from=time_from, time_to=time_to,
     )
 
 
