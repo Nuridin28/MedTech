@@ -8,8 +8,13 @@ until python -c "import socket,os,sys; s=socket.socket(); s.settimeout(2); \
 done
 echo "✅ Postgres reachable."
 
-echo "📦 migrations: alembic upgrade head"
-alembic upgrade head
+# 0001 builds the full current schema via Base.metadata.create_all(), so it
+# already contains every column/table that the later revisions (0002-0006) try
+# to add. Apply 0001, then stamp the rest as applied instead of re-running their
+# redundant ALTERs (which would fail with DuplicateColumn). Idempotent on re-runs.
+echo "📦 migrations: upgrade 0001_init + stamp head"
+alembic upgrade 0001_init
+alembic stamp head
 
 echo "🌱 seeding catalog"
 python -m scripts.seed_catalog

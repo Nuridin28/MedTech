@@ -6,6 +6,7 @@ import { cn, formatPrice, formatDate } from '@/lib/utils'
 import { useOffers, usePriceHistory } from '@/hooks/queries'
 import { activityStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
+import { BookingModal } from '@/components/BookingModal'
 import type { Offer, PriceHistoryResponse } from '@/api/types'
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -205,7 +206,15 @@ export function ServiceDetailPage() {
   const offersQuery = useOffers({ service_id: serviceId, sort: 'price_asc', page_size: 50 })
   const historyQuery = usePriceHistory(serviceId)
 
+  const [bookingOffer, setBookingOffer] = useState<Offer | null>(null)
+
   function handleBook(o: Offer) {
+    setBookingOffer(o)
+  }
+
+  function confirmBooking(datetime: string) {
+    if (!bookingOffer) return
+    const o = bookingOffer
     activityStore.addBooking({
       clinic_id: o.clinic.id,
       clinic_name: o.clinic.name,
@@ -214,8 +223,9 @@ export function ServiceDetailPage() {
       service_name: o.service_name_norm,
       category: o.category,
       price_kzt: o.price_kzt,
-      datetime: new Date(Date.now() + 2 * 86400000).toISOString(),
+      datetime,
     })
+    setBookingOffer(null)
     navigate('/appointments')
   }
 
@@ -428,6 +438,12 @@ export function ServiceDetailPage() {
           <PriceDropSubscribe />
         </div>
       </div>
+
+      <BookingModal
+        offer={bookingOffer}
+        onClose={() => setBookingOffer(null)}
+        onConfirm={confirmBooking}
+      />
     </main>
   )
 }

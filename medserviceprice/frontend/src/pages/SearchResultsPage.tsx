@@ -8,6 +8,7 @@ import { cn, formatPrice, twoGisRouteUrl } from '@/lib/utils'
 import { useOffers } from '@/hooks/queries'
 import { useI18n } from '@/lib/i18n'
 import { activityStore } from '@/lib/store'
+import { BookingModal } from '@/components/BookingModal'
 import type { City, Offer, OffersQuery, ServiceCategory, SortOrder } from '@/api/types'
 
 const CITIES: City[] = ['Almaty', 'Astana', 'Shymkent', 'Karaganda', 'Aktobe', 'Taraz']
@@ -126,8 +127,15 @@ export function SearchResultsPage() {
     setSearchParams(next)
   }
 
+  const [bookingOffer, setBookingOffer] = useState<Offer | null>(null)
+
   function handleBook(o: Offer) {
-    const datetime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+    setBookingOffer(o)
+  }
+
+  function confirmBooking(datetime: string) {
+    if (!bookingOffer) return
+    const o = bookingOffer
     activityStore.addBooking({
       clinic_id: o.clinic.id,
       clinic_name: o.clinic.name,
@@ -138,6 +146,7 @@ export function SearchResultsPage() {
       price_kzt: o.price_kzt,
       datetime,
     })
+    setBookingOffer(null)
     navigate('/appointments')
   }
 
@@ -786,6 +795,12 @@ export function SearchResultsPage() {
           )}
         </div>
       </div>
+
+      <BookingModal
+        offer={bookingOffer}
+        onClose={() => setBookingOffer(null)}
+        onConfirm={confirmBooking}
+      />
     </main>
   )
 }

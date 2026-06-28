@@ -35,6 +35,16 @@ Then:
 - **API docs**: http://localhost:8000/docs
 - **Health**: http://localhost:8000/health
 
+The default stack is intentionally light (6 services, lexical search). Two heavy
+features are opt-in:
+
+- **ELK log panel** (Elasticsearch + Kibana, ~2–3GB): start with
+  `docker compose --profile elk up --build` **and** set `ELASTIC_ENABLED=true` in
+  `.env`. Off by default — logs still go to stdout.
+- **Semantic search** (sentence-transformers + torch, ~2GB image): build the
+  backend with `--build-arg INSTALL_SEMANTIC=true` and set `ENABLE_SEMANTIC=true`.
+  Without it, lexical (pg_trgm) search works and `hybrid` degrades to lexical.
+
 On boot the backend runs `alembic upgrade head` and seeds the catalog (60+
 normalized service positions). The DB starts **empty of prices** — run the parser:
 
@@ -63,6 +73,22 @@ celery -A app.celery_app.celery_app worker --loglevel=info   # separate shell
 # frontend
 cd frontend && npm install && npm run dev   # http://localhost:5173 (proxies /api → :8000)
 ```
+
+### Tests
+
+Backend core logic (catalog normalization + dedup hashing) is covered by unit
+tests with no DB dependency:
+
+```bash
+# in the running backend container (no pytest needed — plain runner):
+docker compose exec backend python run_tests.py
+
+# or with pytest locally:
+cd backend && pip install -r requirements-dev.txt && pytest
+```
+
+CI (`.github/workflows/ci.yml`) runs the backend tests and a frontend
+`tsc --noEmit && vite build` on every push/PR.
 
 ## How it works
 
