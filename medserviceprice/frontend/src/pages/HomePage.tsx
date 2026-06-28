@@ -126,7 +126,7 @@ export function HomePage() {
                       role="option"
                       aria-selected={false}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => navigate(`/search?service_id=${s.id}`)}
+                      onClick={() => navigate(`/search?service_id=${s.id}&city=${city}`)}
                       className="w-full flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface-container-low transition-colors text-left"
                     >
                       <span className="flex items-center gap-3 min-w-0">
