@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi.util import get_remote_address
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.db import get_db
 from app.core.rate_limit import hit_limit, over_daily_budget
 from app.schemas import ChatRequest, ChatResponse
 from app.services import assistant
@@ -27,7 +29,9 @@ async def assistant_status() -> dict:
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
+async def chat(
+    payload: ChatRequest, request: Request, db: AsyncSession = Depends(get_db)
+) -> ChatResponse:
     if not assistant.is_enabled():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -46,7 +50,7 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
 
     history = [t.model_dump() for t in payload.history]
     try:
-        result = await assistant.answer(payload.message, history)
+        result = await assistant.answer(payload.message, history, db=db)
     except assistant.AssistantDisabled:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI assistant is not configured.")
     except Exception:

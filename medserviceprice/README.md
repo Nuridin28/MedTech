@@ -4,9 +4,12 @@
 Collects prices from public clinic price lists, normalizes heterogeneous service
 names to a single catalog, and lets users search and compare prices across clinics.
 
-> Built from the Stitch "Clinical Utility System" designs (9 screens) + a real
-> FastAPI/PostgreSQL/Celery backend with a **real** parser. No mock data — every
-> price shown is scraped from a real public price list.
+> Real FastAPI/PostgreSQL/Celery backend with **real** parsers (3 web sources + file
+> import). No mock data — every price is scraped from a real public price list.
+>
+> 📊 Architecture diagrams (B&W, cross-linked): [docs/architecture.html](docs/architecture.html) ·
+> [docs/component-diagram.html](docs/component-diagram.html) · [docs/parsing-flow.html](docs/parsing-flow.html).
+> Text: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -14,13 +17,34 @@ names to a single catalog, and lets users search and compare prices across clini
 
 | Layer | Tech |
 |-------|------|
-| Frontend | React 18 + TypeScript + Vite + Tailwind + React Router + TanStack Query + framer-motion |
+| Frontend | React 18 + TS + Vite + Tailwind + TanStack Query + framer-motion + **Leaflet** + **i18n** (RU/KZ/EN) + **PWA** |
 | Backend | FastAPI (async) + SQLAlchemy 2.0 + Pydantic v2 |
 | DB | PostgreSQL 16 + `pg_trgm` + `pgvector` |
 | Queue/cache | Celery 5 + Redis 7 |
-| Parsing | httpx + BeautifulSoup4 (lxml) |
-| Normalization | rapidfuzz (lexical+fuzzy) + optional sentence-transformers (semantic) |
+| Parsing | httpx + BeautifulSoup4 (HTML) · doq JSON API · pdfplumber/openpyxl/python-docx (files) |
+| Normalization | rapidfuzz (fuzzy) + optional sentence-transformers (semantic) + **AI catalog suggestions (OpenAI)** |
+| AI assistant | OpenAI behind a safety gateway, **tool-calling** over live data |
+| Enrichment | 2GIS / Google Places (ratings/reviews/photos) + own-site JSON-LD, city-validated |
+| Observability | **ELK** (Elasticsearch + Kibana) JSON logs + `parse_logs` + **alerts** |
 | Proxy | Nginx (serves SPA, proxies `/api`, gzip, security headers) |
+
+## Sources (≥3, adapter pattern)
+
+| Source | Type | Cities |
+|--------|------|--------|
+| KDL Olymp (`kdlolymp.kz`) | server-rendered HTML | 5 |
+| Invitro (`invitro.kz`) | server-rendered HTML | 3 |
+| doq.kz | public JSON API | 6 |
+| File import | Excel / CSV / PDF / DOCX | — |
+
+## Features
+
+Search (lexical/semantic/hybrid) · filters (city, category, price, turnaround, rating,
+online-booking) · sorts (price, rating, freshness, **distance**) · **map** (Leaflet, clustered) ·
+**compare** table · **check-up basket** (cheapest clinic for a bundle) · price history ·
+price-drop **subscriptions** (email) · **online booking** deep-link · **2GIS route** ·
+**AI assistant** (conversational price search) · **admin SPA** (analytics, sources, AI
+normalization, ELK logs, alerts, settings).
 
 ## Quick start
 

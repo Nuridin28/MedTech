@@ -1,99 +1,100 @@
 # MedServicePrice.kz — Архитектура
 
-> Агрегатор цен на медуслуги в Казахстане. Парсит публичные прайс-листы, нормализует
-> названия к единому каталогу, даёт поиск/сравнение цен. Принцип: **никаких мок-данных**.
+> Агрегатор цен на медуслуги в Казахстане. Собирает публичные прайс-листы, нормализует
+> названия к единому каталогу, даёт поиск/сравнение/чек-ап цен. Принцип: **никаких мок-данных**.
 >
-> 📊 **Визуальная схема:** открой [docs/architecture.html](docs/architecture.html) в браузере.
+> 📊 **Визуальные схемы:** [docs/architecture.html](docs/architecture.html) (C4, ЧБ) ·
+> [docs/component-diagram.html](docs/component-diagram.html) (детальные потоки: LLM / парсинг / дедуп / логи).
+
+Тип: **модульный монолит + event-driven ингестия** на клиент-серверной основе. 8 контейнеров.
 
 ## 1. Контейнеры (docker-compose)
 
 ```mermaid
 flowchart TB
-    subgraph edge[Edge]
-        NGINX[Nginx · SPA + /api proxy · gzip · sec-headers]
-    end
-    subgraph app[Application]
-        FE[frontend · React18+Vite+TS · TanStack Query]
-        API[backend · FastAPI async · SQLAlchemy2 · Pydantic2]
-    end
-    subgraph workers[Async / Ingestion]
-        WORKER[celery worker · parse_source · concurrency=2]
-        BEAT[celery beat · daily · Asia/Almaty]
-    end
-    subgraph data[Stateful]
-        PG[(PostgreSQL 16 · pg_trgm + pgvector)]
-        REDIS[(Redis 7 · broker + cache + rate-limit)]
-    end
+    NGINX[Nginx · SPA + /api proxy]
+    FE[frontend · React+Vite · Leaflet · i18n · PWA]
+    API[backend · FastAPI · public/admin/assistant]
+    WORKER[celery worker · parse/normalize-AI/enrich/geocode]
+    BEAT[celery beat · Asia/Almaty]
+    PG[(PostgreSQL 16 · pg_trgm + pgvector)]
+    REDIS[(Redis 7 · broker + cache + rate-limit)]
+    ES[(Elasticsearch 8 · msp-logs-*)]
+    KIB[Kibana]
+    EXT[(OpenAI · Places 2GIS/Google · Nominatim · SMTP · источники)]
     NGINX --> FE
     NGINX -->|/api| API
-    API --> PG
-    API --> REDIS
-    API -.->|.delay| REDIS
-    BEAT -->|schedule| REDIS
-    REDIS --> WORKER
-    WORKER --> PG
-    WORKER -->|invalidate ac:* offers:* clinic:*| REDIS
-    WORKER -->|HTTP GET| EXT[(kdlolymp.kz · 5 городов)]
+    API --> PG & REDIS & ES
+    API -->|chat tool-calling| EXT
+    API -.->|.delay| REDIS --> WORKER
+    BEAT -->|cron| REDIS
+    WORKER --> PG & ES
+    WORKER -->|HTTP/API| EXT
+    ES --> KIB
 ```
 
-## 2. Модель данных
+## 2. Источники (≥3) — adapter-паттерн
+
+| Источник | Тип | Города |
+|---|---|---|
+| **KDL Olymp** (`kdlolymp.kz`) | HTML (server-rendered) | 5 |
+| **Invitro** (`invitro.kz`) | HTML (Bitrix) | 3 |
+| **doq.kz** | публичный JSON API | 6 |
+| **Файловый импорт** | Excel/CSV/PDF/DOCX | — |
+
+Новый источник = подкласс `BaseParser` + строка в `registry.py`. Ядро не меняется.
+
+## 3. Модель данных (12+ таблиц)
 
 ```mermaid
 erDiagram
     CLINICS ||--o{ SERVICE_OFFERS : имеет
     SERVICES_CATALOG ||--o{ SERVICE_OFFERS : нормализует
     SERVICES_CATALOG ||--o{ PRICE_HISTORY : ""
-    CLINICS ||--o{ PRICE_HISTORY : ""
+    CLINICS ||--o{ CLINIC_REVIEWS : ""
     SERVICES_CATALOG ||--o{ UNMATCHED_QUEUE : suggested
-    SERVICES_CATALOG ||--o{ SUBSCRIPTIONS : ""
-    RAW_RECORDS { uuid id PK }
-    SERVICE_OFFERS { uuid service_id FK "nullable = не нормализовано" }
+    CATALOG_SUGGESTIONS ||--o| SERVICES_CATALOG : "AI → approve"
 ```
 
-Двухслойность: `raw_records` (аудит, дедуп `content_hash`) → `service_offers`
-(рабочий слой, дедуп `offer_hash`). `service_id = NULL` — норма (услуга не привязана
-к каталогу, ушла в `unmatched_queue`), цена при этом уже видна.
+Также: `raw_records`, `parse_logs`, `subscriptions`, `alerts`. Двухслойность:
+`raw_records` (аудит, дедуп `content_hash`) → `service_offers` (рабочий слой, дедуп
+`offer_hash`). `service_id = NULL` — норма (услуга в `unmatched_queue`), цена видна.
 
-## 3. Поток ингестии (tasks/parsing.py)
+## 4. Ингестия + дедупликация (services/ingest.py)
 
-```mermaid
-flowchart LR
-    A[beat daily] --> B[parse_source.delay]
-    B --> C[fetch: robots+delay+retry] --> D[BeautifulSoup → RawRecord]
-    D --> E[1 raw dedup content_hash] --> F[2 clinic upsert verified]
-    F --> G[3 normalize 2-порога] --> H[4 offer upsert offer_hash]
-    H --> I[5 price_history append-on-change] --> J[commit + ParseLog]
-    J --> K[invalidate cache]
-```
+`fetch (robots+delay+retry)` → **content_hash** (дедуп сырья) → clinic upsert →
+нормализация → **offer_hash** (дедуп оффера, insert/update) → price_history
+(append-on-change) → ParseLog → **алёрты** (`failed`/0 записей) → инвалидация кэша.
+Изоляция: 1 источник = 1 задача; партиал-толерантность на уровне строки/источника.
 
-Изоляция: каждый город KDL = отдельная задача; партиал-толерантность на уровне строки
-и источника; инвалидация кэша не валит задачу.
+## 5. Нормализация
 
-## 4. Поиск (services/search.py)
+- **Авто:** `exact` → `fuzzy: token_set ≥ 88 И token_sort ≥ 60` (двойной порог не схлопывает панели). Остаток → `unmatched_queue`.
+- **AI-нормализация:** LLM кластеризует очередь в новые позиции каталога (`catalog_suggestions`) → аналитик подтверждает → синонимы привязывают офферы → `renormalize`.
 
-`lexical (pg_trgm)` всегда → при `ENABLE_SEMANTIC=true` добавляется `semantic (pgvector
-HNSW cosine)` → слияние `RRF (k=60)`. Без эмбеддингов `hybrid` тихо схлопывается в lexical.
+## 6. Поиск, сравнение, AI-ассистент
 
-## 5. Нормализация (services/normalization.py)
+- **Поиск:** lexical (pg_trgm) + semantic (pgvector) + RRF-гибрид. Фильтры: город, категория, цена, срок, рейтинг, онлайн-запись. Сортировки: цена/рейтинг/свежесть/**расстояние** (геолокация).
+- **Чек-ап (корзина):** дешевле всего для набора услуг в одной клинике.
+- **AI-ассистент:** OpenAI за safety-gateway (injection → модерация → scope → ответ → проверка утечки) + **tool-calling** — модель вызывает `search`/`offers`/`basket` и отвечает живыми ценами (не RAG: данные структурные).
+- **Обогащение:** рейтинги/отзывы/фото из 2GIS/Google Places + JSON-LD, с валидацией города (не подставляет чужой филиал).
 
-`exact` → `fuzzy: token_set_ratio ≥ 88 И token_sort_ratio ≥ 60`. Двойной порог нужен,
-чтобы не схлопывать панели анализов в один тест. Остаток → `unmatched_queue`, аналитик
-добивает вручную (`/admin/unmatched/{id}/resolve`), опционально обучая синоним.
+## 7. Наблюдаемость
 
-## 6. Безопасность
+| Слой | Где |
+|---|---|
+| Структурные JSON-логи | Elasticsearch + Kibana + `/admin/logs` |
+| Аудит запусков | `parse_logs` → дашборд источников |
+| Алёрты (failed/0/stale) | `alerts` → баннер в админке + email |
 
-slowapi 120/min (Redis) · CORS на origin (не `*`) · admin за `X-API-Key` · security-headers
-(app + Nginx) · ORM-only · `page_size ≤ 100` · Pydantic-валидация · парсер уважает
-robots.txt + delay. Только публичные цены, без PII.
+## 8. Безопасность
 
-## 7. Готовность
+slowapi rate-limit (Redis) · CORS на origin · admin за `X-API-Key` (защищена вся `/admin/*` SPA) ·
+security-headers · ORM-only · `page_size ≤ 100` · Pydantic-валидация · парсер уважает robots.txt + delay ·
+ассистент: rate-limit + модерация + scope-классификатор + проверка утечки промпта. Только публичные цены, без PII.
 
-| Готово | Частично | Нет |
+## 9. Готовность
+
+| Готово | Частично (нужен ключ) | Инфра / план |
 |--------|----------|-----|
-| БД+миграции, парсер KDL, пайплайн, нормализация, лексика, public+admin API, beat, фронт (9 экранов), Docker | семантика (off by default), подписки (без рассылки), FX (без источника курса) | прочие источники, user-auth, гео/карта |
-
-## Документация
-
-Источник истины — код и этот файл. Корневой [`../CLAUDE.md`](../CLAUDE.md)
-синхронизирован с этим проектом (стек, инварианты, маршрутизация скиллов).
-Визуальная схема — [docs/architecture.html](docs/architecture.html).
+| 3 веб-источника + файлы, пайплайн+дедуп, нормализация (+AI), поиск, фильтры, сортировки, карта, сравнение, чек-ап, история, подписки+рассылка, AI-ассистент (tool-calling), обогащение, админ-SPA, ELK, алёрты, i18n, PWA, Docker (8 сервисов) | рейтинги/отзывы (ключ 2GIS), AI-генерация каталога (ключ OpenAI) | бэкапы Postgres, метрики Prometheus, дедуп клиник между источниками, SEO-лендинги |

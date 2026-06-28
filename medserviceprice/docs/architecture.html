@@ -68,14 +68,21 @@
 <body>
 <div class="wrap">
 
+  <nav style="display:flex;flex-wrap:wrap;border:1.5px solid #0f0f0f;border-radius:4px;overflow:hidden;margin:0 0 24px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700">
+    <a href="architecture.html" style="padding:9px 16px;text-decoration:none;background:#0f0f0f;color:#fff;border-right:1px solid #cfcfcf">Архитектура (C4)</a>
+    <a href="component-diagram.html" style="padding:9px 16px;text-decoration:none;color:#0f0f0f;border-right:1px solid #cfcfcf">Компоненты и потоки</a>
+    <a href="parsing-flow.html" style="padding:9px 16px;text-decoration:none;color:#0f0f0f">Конвейер парсинга</a>
+  </nav>
+
   <header class="doc">
     <h1>MedServicePrice.kz — Архитектурная документация</h1>
     <p class="lead">Восстановленная архитектура работающего приложения по модели <b>C4</b>:
        контекст → контейнеры → компоненты → развёртывание. Чёрно-белая схема для печати и ревью.
        Диаграммы построены на Mermaid и рендерятся в браузере.</p>
     <p class="crumbs">Тип: <b>модульный монолит + event-driven ингестия</b> &nbsp;|&nbsp; клиент-сервер &nbsp;|&nbsp;
-       6 контейнеров &nbsp;|&nbsp; 8 таблиц &nbsp;|&nbsp; 1 источник (5 городов) &nbsp;|&nbsp; rev. 3.0</p>
-    <p class="crumbs">→ <b><a href="parsing-flow.html" style="color:var(--ink)">Диаграмма действий: конвейер парсинга и нормализации</a></b></p>
+       8 контейнеров &nbsp;|&nbsp; 12+ таблиц &nbsp;|&nbsp; 3 веб-источника + файлы &nbsp;|&nbsp; AI-ассистент + AI-нормализация + ELK &nbsp;|&nbsp; rev. 4.0</p>
+    <p class="crumbs">→ детальные потоки (LLM / парсинг / дедуп / логи): <b><a href="component-diagram.html" style="color:var(--ink)">component-diagram.html</a></b>
+       &nbsp;·&nbsp; <b><a href="parsing-flow.html" style="color:var(--ink)">parsing-flow.html</a></b></p>
     <div class="legend">
       <span class="it"><span class="sw s1"></span> Актор / внешняя сущность</span>
       <span class="it"><span class="sw s2"></span> Приложение (Frontend / Backend)</span>
@@ -137,29 +144,32 @@ flowchart TB
     <div class="diagram"><pre class="mermaid">
 flowchart TB
   user["ПАЦИЕНТ"]
-  admin["АДМИН"]
-  src["kdlolymp.kz<br/>внешний источник"]
+  admin["АДМИН / АНАЛИТИК"]
+  src["ИСТОЧНИКИ<br/>KDL · Invitro · doq<br/>+ загрузка файлов"]
+  ext["ВНЕШНИЕ СЕРВИСЫ<br/>OpenAI · 2GIS/Google Places<br/>OSM Nominatim · SMTP · НБ РК"]
 
-  subgraph host["DOCKER HOST · сеть docker-compose"]
+  subgraph host["DOCKER HOST · сеть docker-compose (8 контейнеров)"]
     direction TB
-    nginx["NGINX · порт 80<br/>отдача SPA + reverse-proxy /api<br/>gzip, security-заголовки"]
+    nginx["NGINX · :80<br/>отдача SPA + reverse-proxy /api<br/>gzip, security-заголовки"]
 
     subgraph appl["Прикладной слой"]
       direction LR
-      fe["FRONTEND SPA<br/>React 18 + Vite + TS<br/>Tailwind, TanStack Query<br/>(статические файлы)"]
-      api["BACKEND API · порт 8000<br/>FastAPI (async)<br/>SQLAlchemy 2, Pydantic 2<br/>slowapi rate-limit"]
+      fe["FRONTEND SPA<br/>React 18 + Vite + TS · Tailwind<br/>TanStack Query · Leaflet · i18n · PWA<br/>сайт + админ-SPA"]
+      api["BACKEND API · :8000<br/>FastAPI (async) · SQLAlchemy 2 · Pydantic 2<br/>public · admin · assistant · slowapi"]
     end
 
     subgraph asyncl["Асинхронный слой"]
       direction LR
-      worker["CELERY WORKER<br/>задача parse_source<br/>concurrency = 2<br/>httpx + BeautifulSoup + rapidfuzz"]
-      beat["CELERY BEAT<br/>планировщик<br/>ежедневно 03:00 Asia/Almaty<br/>staggered по источникам"]
+      worker["CELERY WORKER · concurrency=2<br/>parse · normalize(AI) · enrich ·<br/>geocode · subscriptions · health"]
+      beat["CELERY BEAT<br/>планировщик (Asia/Almaty):<br/>parse · embeddings · enrich ·<br/>price-alerts · source-health"]
     end
 
-    subgraph datal["Слой данных"]
+    subgraph datal["Слой данных + наблюдаемость"]
       direction LR
-      pg[("POSTGRESQL 16<br/>pg_trgm + pgvector<br/>raw, catalog, clinics,<br/>offers, history, queues")]
-      redis[("REDIS 7<br/>broker очередей +<br/>cache ответов (TTL) +<br/>хранилище rate-limit")]
+      pg[("POSTGRESQL 16<br/>pg_trgm + pgvector<br/>raw · catalog · clinics · offers ·<br/>history · queues · alerts · suggestions")]
+      redis[("REDIS 7<br/>broker · cache (TTL) · rate-limit")]
+      es[("ELASTICSEARCH 8<br/>msp-logs-* (логи)")]
+      kib["KIBANA · :5601"]
     end
   end
 
@@ -167,34 +177,41 @@ flowchart TB
   admin ==>|"HTTPS + X-API-Key"| nginx
   nginx ==>|"статика"| fe
   nginx ==>|"REST / JSON"| api
-  api ==>|"SQL · драйвер asyncpg"| pg
-  api ==>|"RESP · cache-aside + rate-limit"| redis
-  api -.->|".delay() · постановка задачи"| redis
-  beat ==>|"cron schedule"| redis
-  redis ==>|"выдача задачи воркеру"| worker
-  worker ==>|"SQL · драйвер psycopg2"| pg
-  worker -.->|"инвалидация ac:* offers:* clinic:*"| redis
-  worker ==>|"HTTP GET"| src
+  api ==>|"SQL · asyncpg"| pg
+  api ==>|"RESP · cache + rate-limit"| redis
+  api ==>|"chat (tool-calling)"| ext
+  api -.->|".delay() · задача"| redis
+  api -.->|"JSON-логи"| es
+  beat ==>|"cron"| redis
+  redis ==>|"задача воркеру"| worker
+  worker ==>|"SQL · psycopg2"| pg
+  worker -.->|"инвалидация кэша"| redis
+  worker -.->|"JSON-логи"| es
+  worker ==>|"HTTP / API"| src
+  worker ==>|"обогащение / гео / AI / почта"| ext
+  es ==> kib
 
   classDef actor fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
   classDef edge fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
   classDef app fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
   classDef async fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
   classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
-  classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px;
-  class user,admin actor; class nginx edge; class fe,api app; class worker,beat async; class pg,redis data; class src ext;
+  classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px,stroke-dasharray:5 4;
+  class user,admin actor; class nginx edge; class fe,api app; class worker,beat async; class pg,redis,es,kib data; class src,ext ext;
     </pre></div>
     <table>
       <caption>Спецификация контейнеров</caption>
       <thead><tr><th>Контейнер</th><th>Назначение</th><th>Технологии</th><th>Принимает</th><th>Взаимодействует с</th></tr></thead>
       <tbody>
         <tr><td><b>Nginx</b></td><td>отдача SPA, проксирование <code>/api</code>, gzip, заголовки безопасности</td><td>nginx:alpine</td><td>HTTPS :80</td><td>Frontend, Backend</td></tr>
-        <tr><td><b>Frontend</b></td><td>интерфейс: поиск, сравнение, профиль клиники, история цен</td><td>React 18, Vite, TS, Tailwind, TanStack Query</td><td>—</td><td>Backend (REST)</td></tr>
-        <tr><td><b>Backend API</b></td><td>read-side API + admin; кэш по схеме cache-aside</td><td>FastAPI, SQLAlchemy 2, Pydantic 2, slowapi</td><td>REST/JSON</td><td>PostgreSQL, Redis</td></tr>
-        <tr><td><b>Celery Worker</b></td><td>парсинг → нормализация → офферы → история</td><td>Celery 5, httpx, BeautifulSoup4, rapidfuzz</td><td>задача из Redis</td><td>источник, PostgreSQL, Redis</td></tr>
-        <tr><td><b>Celery Beat</b></td><td>ежедневный запуск парсинга (со сдвигом) + пересчёт эмбеддингов</td><td>Celery beat</td><td>cron</td><td>Redis</td></tr>
-        <tr><td><b>PostgreSQL</b></td><td>raw_records, services_catalog, clinics, offers, price_history, очереди</td><td>pgvector/pg16, pg_trgm</td><td>SQL</td><td>API (async), Worker (sync)</td></tr>
+        <tr><td><b>Frontend</b></td><td>сайт (поиск, сравнение, карта, корзина-чек-ап, история, чат) + админ-SPA</td><td>React 18, Vite, TS, Tailwind, TanStack Query, Leaflet, i18n, PWA</td><td>—</td><td>Backend (REST)</td></tr>
+        <tr><td><b>Backend API</b></td><td>public + admin (аналитика/нормализация/логи/алёрты) + AI-ассистент (tool-calling)</td><td>FastAPI, SQLAlchemy 2, Pydantic 2, slowapi</td><td>REST/JSON</td><td>PostgreSQL, Redis, ES, OpenAI</td></tr>
+        <tr><td><b>Celery Worker</b></td><td>парсинг, нормализация, AI-нормализация, обогащение, геокодинг, подписки, health</td><td>Celery 5, httpx, BeautifulSoup4, rapidfuzz</td><td>задача из Redis</td><td>источники, внешние API, PostgreSQL, Redis, ES</td></tr>
+        <tr><td><b>Celery Beat</b></td><td>cron: парсинг, эмбеддинги, обогащение, price-alerts, проверка источников</td><td>Celery beat</td><td>cron</td><td>Redis</td></tr>
+        <tr><td><b>PostgreSQL</b></td><td>raw, catalog, clinics, offers, history, очереди, alerts, suggestions, reviews</td><td>pgvector/pg16, pg_trgm</td><td>SQL</td><td>API (async), Worker (sync)</td></tr>
         <tr><td><b>Redis</b></td><td>брокер задач + кэш ответов (TTL) + счётчики rate-limit</td><td>redis:7-alpine</td><td>RESP</td><td>API, Worker, Beat</td></tr>
+        <tr><td><b>Elasticsearch</b></td><td>хранилище структурных JSON-логов (индекс msp-logs-*)</td><td>elasticsearch:8</td><td>HTTP :9200</td><td>API/Worker (отправка), Kibana, /admin/logs</td></tr>
+        <tr><td><b>Kibana</b></td><td>визуальный анализ логов</td><td>kibana:8</td><td>HTTP :5601</td><td>Elasticsearch</td></tr>
       </tbody>
     </table>
   </div>
@@ -209,55 +226,60 @@ flowchart TB
 
   subgraph be["BACKEND · процесс FastAPI"]
     direction TB
-    pub["api/public<br/>контроллеры чтения:<br/>search · offers · clinics ·<br/>price-history · subscriptions"]
-    adm["api/admin<br/>контроллеры управления:<br/>parse/run · logs ·<br/>unmatched · resolve"]
-    sec["core/security<br/>проверка X-API-Key"]
-    search["services/search<br/>лексический (pg_trgm) +<br/>семантический (pgvector) +<br/>слияние RRF (k=60)"]
-    qmod["services/queries<br/>сборка ответов offers / clinic,<br/>агрегаты min/max/avg, freshness"]
-    norm["services/normalization<br/>exact → fuzzy (двойной порог:<br/>token_set ≥ 88 И token_sort ≥ 60)<br/>→ unmatched_queue"]
-    emb["services/embeddings<br/>sentence-transformers<br/>(опционально)"]
-    fx["services/fx<br/>курс USD → KZT<br/>(fallback 470)"]
+    pub["api/public<br/>search · offers · clinics ·<br/>price-history · basket · subscriptions · map"]
+    adm["api/admin<br/>stats · parse · unmatched ·<br/>normalization(AI) · alerts · logs · import"]
+    ass["api/assistant<br/>chat (LLM tool-calling)"]
+    sec["core/security · X-API-Key"]
+    search["services/search<br/>lexical(pg_trgm)+semantic(pgvector)+RRF"]
+    qmod["services/queries · basket · admin_stats<br/>сборка offers/clinic, агрегаты, фильтры"]
+    norm["services/normalization<br/>exact → fuzzy (двойной порог)"]
+    assistant["services/assistant<br/>safety-gateway + tools"]
+    misc["services: embeddings · fx ·<br/>log_query · notify/alerts"]
   end
 
   subgraph wk["WORKER · процесс Celery"]
     direction TB
-    task["tasks/parsing · parse_source<br/>оркестратор конвейера:<br/>raw → clinic → normalize →<br/>offer → history → invalidate"]
-    embt["tasks/embeddings_task<br/>ночной пересчёт векторов"]
-    reg["parsers/registry<br/>source_key → factory"]
-    kdl["parsers/kdl · KDLParser<br/>(реальный источник, 5 городов)"]
-    base["parsers/base · BaseParser<br/>robots.txt, retry, delay,<br/>content_hash / offer_hash"]
+    task["tasks/parsing · parse_source<br/>raw → clinic → normalize →<br/>offer → history → alerts → invalidate"]
+    tnorm["tasks/normalize_ai<br/>ai_suggest_catalog · renormalize"]
+    tmisc["tasks: enrich · geocode ·<br/>subscriptions · health · embeddings"]
+    ing["services/ingest<br/>дедуп (content/offer_hash)"]
+    ainorm["services/ai_normalize<br/>LLM-кластеризация"]
+    enr["services/clinic_enrich + places<br/>JSON-LD + 2GIS/Google (валид. города)"]
+    reg["parsers/registry → kdl · invitro ·<br/>doq · file_source"]
+    base["parsers/base · BaseParser<br/>robots · retry · delay · hashes"]
   end
 
   pg[("POSTGRESQL")]
   redis[("REDIS")]
+  es[("ELASTICSEARCH")]
+  ext["OpenAI · Places ·<br/>Nominatim · SMTP"]
 
-  client ==> pub
-  client ==> adm
+  client ==> pub & adm & ass
   adm ==> sec
-  pub ==> search
-  pub ==> qmod
-  pub ==> fx
-  search ==> emb
+  pub ==> search & qmod
+  ass ==> assistant ==> ext
+  assistant -.->|"tools: search/offers/basket"| qmod
   search ==> pg
   qmod ==> pg
   pub <==>|"cache-aside"| redis
+  be -.->|"JSON-логи"| es
   adm -.->|"enqueue .delay"| redis
-  redis ==>|"выдача задачи"| task
-  task ==> reg
-  reg ==> kdl
-  kdl ==> base
-  task ==> norm
-  task ==> embt
-  embt ==> emb
+  redis ==>|"задача"| task & tnorm & tmisc
+  task ==> reg ==> base
+  task ==> ing ==> norm
+  tnorm ==> ainorm ==> ext
+  tmisc ==> enr ==> ext
   task ==> pg
-  task -.->|"инвалидация кэша"| redis
+  wk -.->|"JSON-логи"| es
 
   classDef api fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
   classDef svc fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px;
   classDef prs fill:#cfcfcf,stroke:#000,color:#000,stroke-width:1.5px;
   classDef data fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
   classDef io fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
-  class pub,adm,sec api; class search,qmod,norm,emb,fx,task,embt svc; class reg,kdl,base prs; class pg,redis data; class client io;
+  classDef ext fill:#ffffff,stroke:#000,color:#000,stroke-width:1.5px,stroke-dasharray:5 4;
+  class pub,adm,ass,sec api; class search,qmod,norm,assistant,misc,ing,ainorm,enr svc;
+  class task,tnorm,tmisc,reg,base prs; class pg,redis,es data; class client io; class ext ext;
     </pre></div>
     <div class="note"><b>Ключевой приём:</b> модули <code>services/</code> и <code>parsers/</code> не зависят от FastAPI и Celery —
       оркестрацию выполняет только <code>tasks/parsing.py</code>. Поэтому бизнес-логику можно тестировать прямым вызовом функций
@@ -271,41 +293,48 @@ flowchart TB
     <div class="diagram"><pre class="mermaid">
 flowchart TB
   internet(["ИНТЕРНЕТ<br/>пользователи"])
-  ext["kdlolymp.kz<br/>внешний источник"]
+  ext["ВНЕШНИЕ: источники (KDL/Invitro/doq) ·<br/>OpenAI · Places · Nominatim · SMTP"]
 
   subgraph vm["ХОСТ / ВИРТУАЛЬНАЯ МАШИНА · on-prem или cloud"]
-    subgraph dock["DOCKER ENGINE · bridge-сеть docker-compose"]
+    subgraph dock["DOCKER ENGINE · bridge-сеть docker-compose · 8 контейнеров"]
       direction TB
-      c1["frontend (контейнер)<br/>nginx:alpine<br/>порт 80 → host"]
-      c2["backend (контейнер)<br/>uvicorn / FastAPI<br/>порт 8000 → host"]
-      c3["worker (контейнер)<br/>celery worker · 2 процесса"]
-      c4["beat (контейнер)<br/>celery beat"]
-      c5["db (контейнер)<br/>pgvector/pgvector:pg16"]
-      c6["redis (контейнер)<br/>redis:7-alpine"]
-      v1[("том pgdata<br/>персистентность БД")]
-      v2[("том redisdata<br/>персистентность кэша")]
+      c1["frontend<br/>nginx:alpine · 80 → host"]
+      c2["backend<br/>uvicorn/FastAPI · 8000 → host"]
+      c3["worker<br/>celery · 2 процесса"]
+      c4["beat<br/>celery beat"]
+      c5["db<br/>pgvector/pg16"]
+      c6["redis<br/>redis:7-alpine"]
+      c7["elasticsearch<br/>elasticsearch:8"]
+      c8["kibana · 5601 → host"]
+      v1[("том pgdata")]
+      v2[("том redisdata")]
+      v3[("том esdata")]
+      v4[("том uploaddata<br/>(backend↔worker)")]
     end
   end
 
-  internet ==>|"HTTPS · порты 80 / 8000"| c1
+  internet ==>|"80 / 8000 / 5601"| c1
   c1 ==>|"upstream /api"| c2
-  c2 ==> c5
-  c2 ==> c6
-  c3 ==> c5
-  c3 ==> c6
+  c2 ==> c5 & c6 & c7
+  c3 ==> c5 & c6 & c7
   c4 ==> c6
-  c3 ==>|"исходящий HTTP"| ext
+  c2 --- v4
+  c3 --- v4
+  c3 ==>|"исходящий HTTP/API"| ext
+  c2 ==>|"OpenAI (assistant)"| ext
   c5 --- v1
   c6 --- v2
+  c7 --- v3
+  c7 ==> c8
 
   classDef cont fill:#e9e9e9,stroke:#000,color:#000,stroke-width:1.5px;
   classDef vol fill:#f5f5f5,stroke:#000,color:#000,stroke-width:2px;
   classDef net fill:#ffffff,stroke:#000,color:#000,stroke-width:2px;
-  class c1,c2,c3,c4,c5,c6 cont; class v1,v2 vol; class internet,ext net;
+  class c1,c2,c3,c4,c5,c6,c7,c8 cont; class v1,v2,v3,v4 vol; class internet,ext net;
     </pre></div>
     <div class="note"><b>Внимание:</b> текущий compose — single-host, без оркестратора и балансировщика.
-      Все 6 контейнеров на одной машине; PostgreSQL и Redis не реплицированы; есть healthchecks и <code>restart: unless-stopped</code>.
-      Это прод-таргет прототипа — варианты масштабирования см. в разделе 5.</div>
+      Все 8 контейнеров на одной машине; PostgreSQL/Redis/ES не реплицированы; есть healthchecks и <code>restart: unless-stopped</code>.
+      Файлы-прайсы шарятся между backend и worker через том <code>uploaddata</code>. Варианты масштабирования — раздел 5.</div>
   </div>
 
   <!-- 5. ANALYSIS -->

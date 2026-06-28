@@ -39,13 +39,17 @@ def enrich_clinics(only_missing: bool = True) -> dict:
             meta = enrich_from_url(c.source_url)
             if meta.is_empty():
                 continue
-            if meta.address and not c.address:
+            # Multi-branch sites embed ONE HQ address in JSON-LD on every city page
+            # (e.g. KDL's Astana HQ on the Almaty page). Only apply address/coords when
+            # they belong to this clinic's city — otherwise skip (no wrong-city data).
+            addr_ok = places._matches_city(meta.address, c.city)
+            if meta.address and not c.address and addr_ok:
                 c.address = meta.address
             if meta.phone and not c.phone:
                 c.phone = meta.phone
             if meta.working_hours and not c.working_hours:
                 c.working_hours = meta.working_hours
-            if meta.lat and c.lat is None:
+            if meta.lat and c.lat is None and addr_ok:
                 c.lat, c.lng = meta.lat, meta.lng
             if meta.photo_url and not c.photo_url:
                 c.photo_url = meta.photo_url
