@@ -1,0 +1,4 @@
+# AI agent / Claude tooling artifacts — local only, not part of the project
+CLAUDE.md
+.claude/
+.agents/
