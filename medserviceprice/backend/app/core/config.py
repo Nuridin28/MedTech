@@ -108,6 +108,9 @@ class Settings(BaseSettings):
     openai_model: str = Field(default="gpt-4o-mini")
     openai_classifier_model: str = Field(default="gpt-4o-mini")
     openai_timeout_seconds: float = Field(default=20.0)
+    # Catalog AI-suggest clusters many names into a big JSON reply — it legitimately
+    # takes minutes, so it gets its own generous timeout (separate from the chat one).
+    openai_batch_timeout_seconds: float = Field(default=240.0)
     openai_max_output_tokens: int = Field(default=500)
     # Guardrails / abuse limits.
     assistant_max_input_chars: int = Field(default=1000)

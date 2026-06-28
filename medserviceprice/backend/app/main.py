@@ -13,6 +13,7 @@ from slowapi.util import get_remote_address
 
 from app.api.admin import router as admin_router
 from app.api.assistant import router as assistant_router
+from app.api.doctors import router as doctors_router
 from app.api.public import router as public_router
 from app.core.config import settings
 
@@ -43,6 +44,7 @@ app.add_middleware(
 app.include_router(public_router)
 app.include_router(admin_router)
 app.include_router(assistant_router)
+app.include_router(doctors_router)
 
 
 @app.get("/health", tags=["meta"])

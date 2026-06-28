@@ -1,29 +1,28 @@
 """KDL Olymp parser (kdlolymp.kz) — REAL source.
 
-KDL serves a fully server-rendered price list at /pricelist/{city} with the price
-embedded in the HTML, so plain httpx + BeautifulSoup is enough (no Playwright).
+KDL exposes a clean JSON price API that the site itself calls:
 
-Row structure (verified):
-  div.analyzes > div.header > h2            -> category section title
-  a.analysis[href=/services/{slug}]
-      .title                                -> service name (raw)
-      .about .category                      -> category label
-      .about .duration                      -> e.g. "1 день"
-      .buy .price                           -> e.g. "3 980 ₸"
+    GET /api/analysis-data?per-page=100&lang=ru-RU&city_slug={city}&page={n}
+
+It returns categories → analyses with a per-city price, duration and slug, plus
+`_meta.pageCount` for pagination. `city_slug` fully controls the city (the price's
+`city_id` differs per city), so no cookies/auth are needed — just our polite UA.
+robots.txt does NOT disallow /api, so this stays within parser etiquette.
+
+(Previously this parsed the server-rendered /pricelist HTML; the API is stabler.)
 """
 from __future__ import annotations
 
+import json
 import logging
-import re
-
-from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 
 from app.parsers.base import BaseParser, RawClinic, RawServiceRecord
 
 logger = logging.getLogger(__name__)
 
-_PRICE_RE = re.compile(r"[\d\s ]+")
-_DURATION_RE = re.compile(r"(\d+)")
+_PER_PAGE = 100
+_MAX_PAGES = 80  # safety cap against a runaway pagination loop
 
 # KDL Olymp branch presence by city -> our normalized city name.
 KDL_CITIES: dict[str, str] = {
@@ -46,6 +45,7 @@ _CATEGORY_HINTS: dict[str, str] = {
     "коагул": "laboratory",
     "моч": "laboratory",
     "анализ": "laboratory",
+    "профил": "laboratory",
     "узи": "diagnostics",
     "мрт": "diagnostics",
     "кт": "diagnostics",
@@ -72,13 +72,31 @@ class KDLParser(BaseParser):
         self.city_slug = city
         self.city_name = KDL_CITIES[city]
 
+    def _page_url(self, page: int) -> str:
+        qs = urlencode(
+            {"per-page": _PER_PAGE, "lang": "ru-RU", "city_slug": self.city_slug, "page": page}
+        )
+        return f"{self.base_url}/api/analysis-data?{qs}"
+
     def fetch(self) -> list[tuple[str, str]]:
-        url = f"{self.base_url}/pricelist/{self.city_slug}"
-        html = self.get(url)
-        if not html:
-            logger.warning("[kdl] no HTML for %s", url)
+        """Page through the JSON API until pageCount is exhausted."""
+        first_url = self._page_url(1)
+        raw = self.get(first_url)
+        if not raw:
+            logger.warning("[kdl] no data for %s", first_url)
             return []
-        return [(url, html)]
+        pages: list[tuple[str, str]] = [(first_url, raw)]
+        try:
+            page_count = int(json.loads(raw).get("_meta", {}).get("pageCount", 1))
+        except Exception:
+            page_count = 1
+        for page in range(2, min(page_count, _MAX_PAGES) + 1):
+            url = self._page_url(page)
+            body = self.get(url)
+            if body:
+                pages.append((url, body))
+        logger.info("[kdl] %s: fetched %d API page(s)", self.city_name, len(pages))
+        return pages
 
     def parse(self, pages: list[tuple[str, str]]) -> list[RawServiceRecord]:
         records: list[RawServiceRecord] = []
@@ -89,46 +107,44 @@ class KDLParser(BaseParser):
             working_hours="Mon–Sun 07:00–19:00",
         )
 
-        for url, html in pages:
-            soup = BeautifulSoup(html, "lxml")
-            for section in soup.select("div.analyzes"):
-                header = section.select_one(".header h2")
-                section_title = header.get_text(strip=True) if header else ""
+        for _url, body in pages:
+            try:
+                payload = json.loads(body)
+            except Exception:
+                logger.warning("[kdl] page is not valid JSON, skipping")
+                continue
+
+            for category in payload.get("data", []):
+                section_title = (category.get("translation") or {}).get("title", "") or ""
                 category_hint = self._category_for(section_title)
 
-                for a in section.select("a.analysis"):
-                    title_el = a.select_one(".title")
-                    price_el = a.select_one(".price")
-                    if not title_el or not price_el:
-                        continue
-                    name = title_el.get_text(" ", strip=True)
-                    price = self._parse_price(price_el.get_text())
-                    if price is None or not name:
-                        continue
+                for a in category.get("analysis", []):
+                    if a.get("site_show") == 0:
+                        continue  # not shown on the public price list
+                    name = ((a.get("translation") or {}).get("title") or "").strip()
+                    price_obj = a.get("price") or {}
+                    price = price_obj.get("price")
+                    if not name or not price:
+                        continue  # no price for this city -> skip
 
-                    dur_el = a.select_one(".duration")
-                    duration = self._parse_duration(dur_el.get_text()) if dur_el else None
-
-                    cat_el = a.select_one(".category")
-                    cat_hint = (
-                        self._category_for(cat_el.get_text(strip=True))
-                        if cat_el
-                        else category_hint
-                    )
-
-                    href = a.get("href") or ""
-                    source_url = href if href.startswith("http") else f"{self.base_url}{href}"
+                    slug = a.get("slug") or ""
+                    source_url = f"{self.base_url}/services/{slug}" if slug else clinic.source_url
 
                     records.append(
                         RawServiceRecord(
                             clinic=clinic,
                             service_name_raw=name,
-                            price=price,
+                            price=float(price),
                             currency="KZT",
-                            duration_days=duration,
-                            category_hint=cat_hint,
+                            duration_days=self._duration_days(price_obj),
+                            category_hint=category_hint,
                             source_url=source_url,
-                            extra={"section": section_title},
+                            extra={
+                                "section": section_title,
+                                "code": a.get("code"),
+                                "out_id": a.get("out_id"),
+                                "city_id": price_obj.get("city_id"),
+                            },
                         )
                     )
 
@@ -137,19 +153,12 @@ class KDLParser(BaseParser):
 
     # --- helpers ----------------------------------------------------------
     @staticmethod
-    def _parse_price(text: str) -> float | None:
-        # "3 980 ₸ " / "3 980 ₸" -> 3980.0
-        cleaned = text.replace(" ", " ").strip()
-        m = _PRICE_RE.search(cleaned)
-        if not m:
-            return None
-        digits = re.sub(r"\D", "", m.group())
-        return float(digits) if digits else None
-
-    @staticmethod
-    def _parse_duration(text: str) -> int | None:
-        m = _DURATION_RE.search(text or "")
-        return int(m.group(1)) if m else None
+    def _duration_days(price_obj: dict) -> int | None:
+        # duration_unit == 2 means calendar days on KDL; use the upper bound.
+        if price_obj.get("duration_unit") == 2:
+            d = price_obj.get("max_duration") or price_obj.get("min_duration")
+            return int(d) if d else None
+        return None
 
     @staticmethod
     def _category_for(title: str) -> str | None:

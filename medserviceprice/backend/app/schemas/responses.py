@@ -262,6 +262,63 @@ class BasketResponse(BaseModel):
     best_split_total: float | None = None    # theoretical cheapest if split across clinics
 
 
+# --- Doctors / appointments (doq live, TZ §3.4) ---
+class DoctorBranchOut(BaseModel):
+    id: int
+    name: str | None = None
+    address: str | None = None
+    clinic_slug: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    phone: str | None = None
+
+
+class DoctorOut(BaseModel):
+    id: int
+    name: str | None = None
+    avatar_url: str | None = None
+    experience: int | None = None
+    gender: str | None = None
+    rating: float | None = None
+    reviews_count: int = 0
+    specialties: list[str] = []
+    min_price_kzt: float | None = None
+    nearest_slot: str | None = None
+    branches: list[DoctorBranchOut] = []
+    doq_url: str | None = None
+    matching_slots: list[str] = []
+
+
+class DoctorsResponse(BaseModel):
+    items: list[DoctorOut]
+    total: int
+    page: int
+    page_size: int
+
+
+class SlotItemOut(BaseModel):
+    id: int | None = None
+    time: str
+    datetime: str
+    branch: int | None = None
+
+
+class SlotDayOut(BaseModel):
+    date: str
+    slots: list[SlotItemOut]
+
+
+class DoctorSlotsResponse(BaseModel):
+    dates: list[SlotDayOut]
+    total_slots: int = 0
+
+
+class SpecialtyOut(BaseModel):
+    id: int
+    name: str
+    slug: str | None = None
+
+
 # --- Map (TZ §3.4) ---
 class ClinicPin(BaseModel):
     id: str

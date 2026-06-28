@@ -7,7 +7,11 @@ import type {
   ChatTurn,
   ClinicDetail,
   ClinicsMapResponse,
+  DoctorSlots,
+  DoctorsQuery,
+  DoctorsResponse,
   ImportResponse,
+  Specialty,
   LogsQuery,
   LogsResponse,
   OffersQuery,
@@ -88,6 +92,25 @@ export const api = {
   /** GET /api/clinics-map?city= — geolocated clinics for the map (TZ §3.4). */
   getClinicsMap(city?: string): Promise<ClinicsMapResponse> {
     return get<ClinicsMapResponse>('/clinics-map', { city })
+  },
+
+  /** GET /api/doctors — doctors with prices/ratings/nearest slot (doq live). */
+  getDoctors(params: DoctorsQuery): Promise<DoctorsResponse> {
+    return get<DoctorsResponse>('/doctors', params as Record<string, string | number | undefined>)
+  },
+
+  /** GET /api/doctors/specialties?city= */
+  getDoctorSpecialties(city: string): Promise<Specialty[]> {
+    return get<Specialty[]>('/doctors/specialties', { city })
+  },
+
+  /** GET /api/doctors/{id}/slots — live available time slots. */
+  getDoctorSlots(id: number, branches: string, dateFrom?: string, dateTo?: string): Promise<DoctorSlots> {
+    return get<DoctorSlots>(`/doctors/${id}/slots`, {
+      branches,
+      date_from: dateFrom,
+      date_to: dateTo,
+    })
   },
 
   /** POST /api/basket/cheapest — cheapest clinic for a bundle of services. */

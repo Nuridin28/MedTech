@@ -10,6 +10,7 @@ import { FavoritesPage } from '@/pages/FavoritesPage'
 import { MedicalRecordsPage } from '@/pages/MedicalRecordsPage'
 import { MapPage } from '@/pages/MapPage'
 import { BasketPage } from '@/pages/BasketPage'
+import { DoctorsPage } from '@/pages/DoctorsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AdminAuthProvider } from '@/lib/adminAuth'
 import { AdminGate } from '@/components/admin/AdminLayout'
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
       { path: '/clinic/:clinicId', element: <ClinicProfilePage /> },
       { path: '/map', element: <MapPage /> },
       { path: '/basket', element: <BasketPage /> },
+      { path: '/doctors', element: <DoctorsPage /> },
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/appointments', element: <AppointmentsPage /> },
       { path: '/favorites', element: <FavoritesPage /> },

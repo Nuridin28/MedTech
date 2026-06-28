@@ -190,7 +190,7 @@ export function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter">
             {/* Diagnostic Large Card */}
             <Link
-              to="/search?q=MRI%20of%20the%20brain"
+              to={`/search?q=${encodeURIComponent('МРТ')}&city=${city}`}
               className="md:col-span-2 md:row-span-2 bg-surface-container-low rounded-xl p-8 relative overflow-hidden group cursor-pointer border border-outline-variant/30 card-hover block"
             >
               <div className="relative z-10">
@@ -214,7 +214,7 @@ export function HomePage() {
 
             {/* Analytics Card */}
             <Link
-              to="/search?q=General%20blood%20test"
+              to={`/search?q=${encodeURIComponent('Общий анализ крови')}&city=${city}`}
               className="bg-white rounded-xl p-6 border border-outline-variant card-hover group cursor-pointer block"
             >
               <div className="bg-primary/5 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
@@ -227,7 +227,7 @@ export function HomePage() {
 
             {/* Consultation Card */}
             <Link
-              to="/search?q=Specialist%20consultation"
+              to={`/search?q=${encodeURIComponent('Консультация специалиста')}&city=${city}`}
               className="bg-white rounded-xl p-6 border border-outline-variant card-hover group cursor-pointer block"
             >
               <div className="bg-secondary/5 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-secondary/10 transition-colors">
@@ -240,7 +240,7 @@ export function HomePage() {
 
             {/* Dental Card */}
             <Link
-              to="/search?q=Dental%20hygiene"
+              to={`/search?q=${encodeURIComponent('Гигиена полости рта')}&city=${city}`}
               className="bg-white rounded-xl p-6 border border-outline-variant card-hover group cursor-pointer block"
             >
               <div className="bg-warning-orange/5 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-warning-orange/10 transition-colors">
@@ -253,7 +253,7 @@ export function HomePage() {
 
             {/* Ultrasound Card */}
             <Link
-              to="/search?q=Ultrasound%20screening"
+              to={`/search?q=${encodeURIComponent('УЗИ')}&city=${city}`}
               className="bg-white rounded-xl p-6 border border-outline-variant card-hover group cursor-pointer block"
             >
               <div className="bg-tertiary/5 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:bg-tertiary/10 transition-colors">

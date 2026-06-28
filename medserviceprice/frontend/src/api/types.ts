@@ -176,6 +176,74 @@ export interface DashboardStats {
   tracked_services: number
 }
 
+/* ---- Doctors / appointments (doq live) ---- */
+export interface DoctorBranch {
+  id: number
+  name: string | null
+  address: string | null
+  clinic_slug: string | null
+  lat: number | null
+  lng: number | null
+  phone: string | null
+}
+
+export interface Doctor {
+  id: number
+  name: string | null
+  avatar_url: string | null
+  experience: number | null
+  gender: string | null
+  rating: number | null
+  reviews_count: number
+  specialties: string[]
+  min_price_kzt: number | null
+  nearest_slot: string | null
+  branches: DoctorBranch[]
+  doq_url: string | null
+  matching_slots: string[]
+}
+
+export interface DoctorsResponse {
+  items: Doctor[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface Slot {
+  id: number | null
+  time: string
+  datetime: string
+  branch: number | null
+}
+export interface SlotDay {
+  date: string
+  slots: Slot[]
+}
+export interface DoctorSlots {
+  dates: SlotDay[]
+  total_slots: number
+}
+export interface Specialty {
+  id: number
+  name: string
+  slug: string | null
+}
+
+export interface DoctorsQuery {
+  city?: string
+  specialty?: number
+  q?: string
+  sort?: string
+  page?: number
+  page_size?: number
+  user_lat?: number
+  user_lng?: number
+  weekday?: number
+  time_from?: string
+  time_to?: string
+}
+
 /* ---- Basket / check-up ---- */
 export interface BasketLine {
   service_id: string

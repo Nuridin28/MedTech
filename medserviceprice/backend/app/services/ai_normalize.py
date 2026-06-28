@@ -39,7 +39,7 @@ _SYSTEM = (
 
 
 def _openai_chat(messages: list[dict], model: str) -> str:
-    with httpx.Client(timeout=settings.openai_timeout_seconds * 3) as client:
+    with httpx.Client(timeout=settings.openai_batch_timeout_seconds) as client:
         resp = client.post(
             f"{settings.openai_base_url}/chat/completions",
             headers={"Authorization": f"Bearer {settings.openai_api_key}"},
